@@ -5,6 +5,15 @@
 include(GoogleTest)
 include(${PROJECT_SOURCE_DIR}/evmc/cmake/EVMC.cmake)
 
+include(FetchContent)
+
+FetchContent_Declare(nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.10.4)
+
+FetchContent_MakeAvailable(nlohmann_json)
+
+
 set(evmone_private_include_dir ${PROJECT_SOURCE_DIR}/lib)
 
 hunter_add_package(benchmark)

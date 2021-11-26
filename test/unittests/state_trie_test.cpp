@@ -5,6 +5,11 @@
 #include <gtest/gtest.h>
 #include <test/state/trie.hpp>
 
+#include <nlohmann/json.hpp>
+#include <fstream>
+
+namespace json = nlohmann;
+
 using namespace evmone;
 using namespace evmone::state;
 
@@ -408,7 +413,7 @@ TEST(state, trie_4keys_extended_node_split)
             {"13aa", "x___________________________3", "ff0dc70ce2e5db90ee42a4c2ad12139596b890e90eb4e16526ab38fa465b35cf"},
         },
     };
-    //clang-format on
+    // clang-format on
 
     for (const auto& test : tests)
     {
@@ -421,5 +426,22 @@ TEST(state, trie_4keys_extended_node_split)
             EXPECT_EQ(hex(st.hash()), kv.hash_hex);
         }
     }
+}
+
+TEST(state, load_json)
+{
+    const auto file =
+        "/home/chfast/Projects/ethereum/go-ethereum/tests/testdata/GeneralStateTests/stExample/"
+        "add11.json";
+    std::ifstream in{file};
+    json::json j;
+    in >> j;
+
+    const auto& _t = j["add11"];
+    const auto& tr = _t["transaction"];
+    const auto& pre = _t["pre"];
+    (void)pre;
+
+    EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
 
 }
