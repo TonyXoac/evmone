@@ -428,6 +428,9 @@ TEST(state, trie_4keys_extended_node_split)
     }
 }
 
+class TestState : public evmc::MockedHost
+{};
+
 TEST(state, load_json)
 {
     const auto file =
@@ -440,8 +443,16 @@ TEST(state, load_json)
     const auto& _t = j["add11"];
     const auto& tr = _t["transaction"];
     const auto& pre = _t["pre"];
-    (void)pre;
+
+    TestState state;
+
+    for (const auto& [j_addr, j_acc] : pre.items())
+    {
+        const auto addr = evmc::literals::internal::from_hex<address>(j_addr.c_str());
+        auto& acc = state.accounts[addr];
+        acc.balance = evmc::literals::internal::from_hex<hash256>(
+            j_acc["balance"].get<std::string>().c_str());
+    }
 
     EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
-
 }
