@@ -431,6 +431,33 @@ TEST(state, trie_4keys_extended_node_split)
 class TestState : public evmc::MockedHost
 {};
 
+template <typename T>
+T from_json(const json::json& j) = delete;
+
+template <>
+address from_json<address>(const json::json& j)
+{
+    return evmc::literals::internal::from_hex<address>(j.get<std::string>().c_str());
+}
+
+template <>
+hash256 from_json<hash256>(const json::json& j)
+{
+    return evmc::literals::internal::from_hex<hash256>(j.get<std::string>().c_str());
+}
+
+template <>
+bytes from_json<bytes>(const json::json& j)
+{
+    return from_hex(j.get<std::string>());
+}
+
+template <>
+int from_json<int>(const json::json& j)
+{
+    return std::stoi(j.get<std::string>(), nullptr, 16);
+}
+
 TEST(state, load_json)
 {
     const auto file =
@@ -448,11 +475,22 @@ TEST(state, load_json)
 
     for (const auto& [j_addr, j_acc] : pre.items())
     {
-        const auto addr = evmc::literals::internal::from_hex<address>(j_addr.c_str());
+        const auto addr = from_json<address>(j_addr);
         auto& acc = state.accounts[addr];
-        acc.balance = evmc::literals::internal::from_hex<hash256>(
-            j_acc["balance"].get<std::string>().c_str());
+        acc.balance = from_json<hash256>(j_acc["balance"]);
+        acc.nonce = from_json<int>(j_acc["nonce"]);
+        acc.code = from_json<bytes>(j_acc["code"]);
     }
+
+    const auto coinbase = 0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba_address;
+    const auto origin = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address;
+    const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
+
+    EXPECT_EQ(state.accounts[coinbase].balance, 0);
+
+    EXPECT_EQ(state.accounts[origin].balance, 0);
+
+    EXPECT_EQ(state.accounts[recipient].balance, 0);
 
     EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
 }
