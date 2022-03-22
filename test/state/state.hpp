@@ -11,6 +11,6 @@ namespace evmone::state
 class State
 {
 public:
-    std::unordered_map<address, Account> accounts;
+    std::unordered_map<evmc::address, Account> accounts;
 };
 }  // namespace evmone::state

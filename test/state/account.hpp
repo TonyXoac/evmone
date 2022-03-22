@@ -6,6 +6,7 @@
 
 #include <evmc/evmc.hpp>
 #include <evmc/mocked_host.hpp>
+#include <intx/intx.hpp>
 
 namespace evmone::state
 {
@@ -21,18 +22,10 @@ struct Account
     evmc::bytes32 codehash;
 
     /// The account balance.
-    evmc::uint256be balance;
+    intx::uint256 balance;
 
     /// The account storage map.
     std::unordered_map<evmc::bytes32, evmc::storage_value> storage;
-
-    /// Helper method for setting balance by numeric type.
-    void set_balance(uint64_t x) noexcept
-    {
-        balance = evmc::uint256be{};
-        for (std::size_t i = 0; i < sizeof(x); ++i)
-            balance.bytes[sizeof(balance) - 1 - i] = static_cast<uint8_t>(x >> (8 * i));
-    }
 };
 
 using namespace evmc::literals;

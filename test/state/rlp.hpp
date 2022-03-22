@@ -75,6 +75,7 @@ inline bytes encode(const state::Account& a)
 {
     assert(a.storage.empty());
     assert(a.code.empty());
-    return rlp::list(a.nonce, rlp::trim(a.balance), state::emptyTrieHash, state::emptyCodeHash);
+    const auto balance_bytes = intx::be::store<evmc::uint256be>(a.balance);
+    return rlp::list(a.nonce, rlp::trim(balance_bytes), state::emptyTrieHash, state::emptyCodeHash);
 }
 }  // namespace evmone::rlp

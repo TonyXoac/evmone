@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
-#include <test/state/trie.hpp>
 #include <test/state/state.hpp>
+#include <test/state/trie.hpp>
 
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -27,6 +27,12 @@ template <>
 hash256 from_json<hash256>(const json::json& j)
 {
     return evmc::literals::internal::from_hex<hash256>(j.get<std::string>().c_str());
+}
+
+template <>
+intx::uint256 from_json<intx::uint256>(const json::json& j)
+{
+    return intx::from_string<intx::uint256>(j.get<std::string>().c_str());
 }
 
 template <>
@@ -58,7 +64,7 @@ TEST(state, load_json)
     {
         const auto addr = from_json<address>(j_addr);
         auto& acc = state.accounts[addr];
-        acc.balance = from_json<hash256>(j_acc["balance"]);
+        acc.balance = from_json<intx::uint256>(j_acc["balance"]);
         acc.nonce = from_json<int>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
     }
@@ -67,11 +73,11 @@ TEST(state, load_json)
     const auto origin = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address;
     const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
 
-    EXPECT_EQ(state.accounts[coinbase].balance.bytes[0], 0);
+    EXPECT_EQ(state.accounts[coinbase].balance, 0);
 
-    EXPECT_EQ(state.accounts[origin].balance.bytes[0], 0);
+    EXPECT_EQ(state.accounts[origin].balance, 0);
 
-    EXPECT_EQ(state.accounts[recipient].balance.bytes[0], 0);
+    EXPECT_EQ(state.accounts[recipient].balance, 0);
 
     EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
 }

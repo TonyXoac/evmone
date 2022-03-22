@@ -31,7 +31,7 @@ TEST(state, rlp_v1)
         "a0 c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
 
     Account a;
-    a.set_balance(1);
+    a.balance = 1;
     EXPECT_EQ(hex(rlp::encode(a)), hex(expected));
     EXPECT_EQ(rlp::encode(a).size(), 70);
 
@@ -61,7 +61,7 @@ TEST(state, single_account_v1)
 
     Account a;
     const auto addr = 0x0000000000000000000000000000000000000002_address;
-    a.set_balance(1);
+    a.balance = 1;
 
     Trie trie;
     const auto xkey = keccak256(addr);

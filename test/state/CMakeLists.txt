@@ -8,5 +8,7 @@ target_sources(
     evmone-state PRIVATE
     account.hpp
     rlp.hpp
+    state.hpp
+    trie.hpp
     utils.hpp
 )
