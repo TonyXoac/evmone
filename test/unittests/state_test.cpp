@@ -26,7 +26,7 @@ address from_json<address>(const json::json& j)
 template <>
 hash256 from_json<hash256>(const json::json& j)
 {
-    return evmc::literals::internal::from_hex<hash256>(j.get<std::string>().c_str());
+    return evmc::literals::internal::from_hex<hash256>(j.get<std::string>().c_str() + 2);
 }
 
 template <>
@@ -106,4 +106,13 @@ TEST(state, load_json)
     EXPECT_EQ(tx.sender, origin);
     EXPECT_EQ(tx.to, recipient);
     EXPECT_EQ(tx.value, 0x0186a0);
+
+    state::transition(state, tx, EVMC_LONDON);
+
+    const auto expected_state_hash = from_json<hash256>(_t["post"]["London"][0]["hash"]);
+    EXPECT_EQ(expected_state_hash,
+        0xe8010ce590f401c9d61fef8ab05bea9bcec24281b795e5868809bc4e515aa530_bytes32);
+
+    // FIXME:
+    // EXPECT_EQ(state::trie_hash(state), expected_state_hash);
 }

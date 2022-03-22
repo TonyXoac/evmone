@@ -25,4 +25,8 @@ struct Tx
     evmc::address to;
     intx::uint256 value;
 };
+
+void transition(State& state, const Tx& tx, evmc_revision rev);
+
+hash256 trie_hash(const State& state);
 }  // namespace evmone::state
