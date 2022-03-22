@@ -71,7 +71,7 @@ inline bytes list(const Items&... items)
     return r;
 }
 
-bytes encode(const state::Account& a)
+inline bytes encode(const state::Account& a)
 {
     assert(a.storage.empty());
     assert(a.code.empty());
