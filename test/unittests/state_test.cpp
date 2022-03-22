@@ -2,59 +2,14 @@
 // Copyright 2021 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
-#include <ethash/keccak.hpp>
-#include <evmc/evmc.hpp>
-#include <evmc/hex.hpp>
 #include <evmc/mocked_host.hpp>
 #include <gtest/gtest.h>
-#include <cstring>
+#include <test/state/utils.hpp>
 
-// Better API and utils
-// ====================
 
-using evmc::bytes;
-using evmc::bytes_view;
-using namespace evmc::literals;
-
-/// Better than ethash::hash256 because has some additional handy constructors.
-using hash256 = evmc::bytes32;
-
-inline hash256 keccak256(bytes_view data) noexcept
+namespace evmone
 {
-    const auto eh = ethash::keccak256(std::data(data), std::size(data));
-    hash256 h;
-    std::memcpy(h.bytes, eh.bytes, sizeof(h));
-    return h;
-}
-
-inline hash256 keccak256(const evmc::address& addr) noexcept
-{
-    return keccak256({addr.bytes, sizeof(addr)});
-}
-
-inline hash256 keccak256(const evmc::bytes32& h) noexcept
-{
-    return keccak256({h.bytes, sizeof(h)});
-}
-
-using evmc::address;
-using evmc::from_hex;
-using evmc::hex;
 using Account = evmc::MockedAccount;
-
-inline auto hex(const hash256& h) noexcept
-{
-    return hex({h.bytes, std::size(h.bytes)});
-}
-
-inline bytes to_bytes(std::string_view s)
-{
-    bytes b;
-    b.reserve(std::size(s));
-    for (const auto c : s)
-        b.push_back(static_cast<uint8_t>(c));
-    return b;
-}
 
 
 // Temporary needed up here to hock RLP encoding of an Account.
@@ -63,12 +18,12 @@ constexpr auto emptyTrieHash =
 
 constexpr auto emptyCodeHash =
     0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32;
-
+}  // namespace evmone
 
 // RLP
 // ===
 
-namespace rlp
+namespace evmone::rlp
 {
 inline bytes string(bytes_view data)
 {
@@ -137,13 +92,13 @@ bytes encode(const Account& a)
     assert(a.code.empty());
     return rlp::list(a.nonce, rlp::trim(a.balance), emptyTrieHash, emptyCodeHash);
 }
-}  // namespace rlp
+}  // namespace evmone::rlp
 
 
 // State Trie
 // ==========
 
-namespace
+namespace evmone
 {
 /// Trie path (key)
 struct Path
@@ -425,8 +380,9 @@ public:
     }
 };
 
-}  // namespace
+}  // namespace evmone
 
+using namespace evmone;
 
 TEST(state, empty_code_hash)
 {

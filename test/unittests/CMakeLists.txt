@@ -30,7 +30,7 @@ add_executable(evmone-unittests
     tracing_test.cpp
     utils_test.cpp
 )
-target_link_libraries(evmone-unittests PRIVATE evmone testutils evmc::instructions GTest::gtest GTest::gtest_main)
+target_link_libraries(evmone-unittests PRIVATE evmone evmone::state testutils evmc::instructions GTest::gtest GTest::gtest_main)
 target_include_directories(evmone-unittests PRIVATE ${evmone_private_include_dir})
 
 gtest_discover_tests(evmone-unittests TEST_PREFIX ${PROJECT_NAME}/unittests/)
