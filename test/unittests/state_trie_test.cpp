@@ -460,9 +460,7 @@ int from_json<int>(const json::json& j)
 
 TEST(state, load_json)
 {
-    const auto file =
-        "/home/chfast/Projects/ethereum/go-ethereum/tests/testdata/GeneralStateTests/stExample/"
-        "add11.json";
+    const auto file = "/home/chfast/Projects/ethereum/tests/GeneralStateTests/stExample/add11.json";
     std::ifstream in{file};
     json::json j;
     in >> j;
@@ -486,11 +484,11 @@ TEST(state, load_json)
     const auto origin = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address;
     const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
 
-    EXPECT_EQ(state.accounts[coinbase].balance, 0);
+    EXPECT_EQ(state.accounts[coinbase].balance.bytes[0], 0);
 
-    EXPECT_EQ(state.accounts[origin].balance, 0);
+    EXPECT_EQ(state.accounts[origin].balance.bytes[0], 0);
 
-    EXPECT_EQ(state.accounts[recipient].balance, 0);
+    EXPECT_EQ(state.accounts[recipient].balance.bytes[0], 0);
 
     EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
 }
