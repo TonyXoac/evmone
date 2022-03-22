@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "utils.hpp"
 #include "account.hpp"
+#include "utils.hpp"
 #include <cassert>
 
 namespace evmone::rlp
@@ -71,10 +71,10 @@ inline bytes list(const Items&... items)
     return r;
 }
 
-bytes encode(const Account& a)
+bytes encode(const state::Account& a)
 {
     assert(a.storage.empty());
     assert(a.code.empty());
-    return rlp::list(a.nonce, rlp::trim(a.balance), emptyTrieHash, emptyCodeHash);
+    return rlp::list(a.nonce, rlp::trim(a.balance), state::emptyTrieHash, state::emptyCodeHash);
 }
 }  // namespace evmone::rlp
