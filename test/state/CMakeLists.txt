@@ -6,5 +6,7 @@ add_library(evmone-state INTERFACE)
 add_library(evmone::state ALIAS evmone-state)
 target_sources(
     evmone-state PRIVATE
+    account.hpp
+    rlp.hpp
     utils.hpp
 )
