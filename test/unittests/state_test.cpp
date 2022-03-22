@@ -20,7 +20,7 @@ T from_json(const json::json& j) = delete;
 template <>
 address from_json<address>(const json::json& j)
 {
-    return evmc::literals::internal::from_hex<address>(j.get<std::string>().c_str());
+    return evmc::literals::internal::from_hex<address>(j.get<std::string>().c_str() + 2);
 }
 
 template <>
@@ -45,6 +45,18 @@ template <>
 int from_json<int>(const json::json& j)
 {
     return std::stoi(j.get<std::string>(), nullptr, 16);
+}
+
+template <>
+int64_t from_json<int64_t>(const json::json& j)
+{
+    return static_cast<int64_t>(std::stoll(j.get<std::string>(), nullptr, 16));
+}
+
+template <>
+uint64_t from_json<uint64_t>(const json::json& j)
+{
+    return static_cast<uint64_t>(std::stoull(j.get<std::string>(), nullptr, 16));
 }
 
 TEST(state, load_json)
@@ -74,10 +86,24 @@ TEST(state, load_json)
     const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
 
     EXPECT_EQ(state.accounts[coinbase].balance, 0);
+    EXPECT_EQ(state.accounts[coinbase].nonce, 1);
+    EXPECT_EQ(state.accounts[origin].balance, 0x0de0b6b3a7640000);
+    EXPECT_EQ(state.accounts[recipient].balance, 0x0de0b6b3a7640000);
 
-    EXPECT_EQ(state.accounts[origin].balance, 0);
+    state::Tx tx;
+    tx.data = from_json<bytes>(tr["data"][0]);
+    tx.gas_limit = from_json<int64_t>(tr["gasLimit"][0]);
+    tx.gas_price = from_json<intx::uint256>(tr["gasPrice"]);
+    tx.nonce = from_json<uint64_t>(tr["nonce"]);
+    tx.sender = from_json<evmc::address>(tr["sender"]);
+    tx.to = from_json<evmc::address>(tr["to"]);
+    tx.value = from_json<intx::uint256>(tr["value"][0]);
 
-    EXPECT_EQ(state.accounts[recipient].balance, 0);
-
-    EXPECT_EQ(tr["data"][0].get<std::string>(), "0x");
+    EXPECT_EQ(tx.data, bytes_view{});
+    EXPECT_EQ(tx.gas_limit, 400000);
+    EXPECT_EQ(tx.gas_price, 10);
+    EXPECT_EQ(tx.nonce, 0);
+    EXPECT_EQ(tx.sender, origin);
+    EXPECT_EQ(tx.to, recipient);
+    EXPECT_EQ(tx.value, 0x0186a0);
 }

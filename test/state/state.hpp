@@ -5,6 +5,7 @@
 #pragma once
 
 #include "account.hpp"
+#include "utils.hpp"
 
 namespace evmone::state
 {
@@ -12,5 +13,16 @@ class State
 {
 public:
     std::unordered_map<evmc::address, Account> accounts;
+};
+
+struct Tx
+{
+    bytes data;
+    int64_t gas_limit;
+    intx::uint256 gas_price;
+    uint64_t nonce;
+    evmc::address sender;
+    evmc::address to;
+    intx::uint256 value;
 };
 }  // namespace evmone::state
