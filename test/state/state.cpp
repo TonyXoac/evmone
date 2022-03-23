@@ -29,8 +29,14 @@ hash256 trie_hash(const State& state)
     for (const auto& [addr, acc] : state.accounts)
     {
         const auto xkey = keccak256(addr);
-        const auto xval = rlp::encode(acc);
-        trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xval);
+
+        assert(acc.storage.empty());
+        const auto balance_bytes = intx::be::store<evmc::uint256be>(acc.balance);
+        const auto code_hash = keccak256(acc.code);
+        const auto xacc =
+            rlp::list(acc.nonce, rlp::trim(balance_bytes), state::emptyTrieHash, code_hash);
+
+        trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xacc);
     }
     return trie.hash();
 }

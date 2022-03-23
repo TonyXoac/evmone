@@ -73,6 +73,7 @@ inline bytes list(const Items&... items)
 
 inline bytes encode(const state::Account& a)
 {
+    // TODO: This function should be removed.
     assert(a.storage.empty());
     const auto balance_bytes = intx::be::store<evmc::uint256be>(a.balance);
     const auto code_hash = keccak256(a.code);

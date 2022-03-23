@@ -3,13 +3,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
-#include <test/state/trie.hpp>
 #include <test/state/state.hpp>
-
-#include <nlohmann/json.hpp>
-#include <fstream>
-
-namespace json = nlohmann;
+#include <test/state/trie.hpp>
 
 using namespace evmone;
 using namespace evmone::state;
@@ -46,6 +41,8 @@ TEST(state, empty_trie)
 
     Trie trie;
     EXPECT_EQ(trie.hash(), emptyTrieHash);
+
+    EXPECT_EQ(state::trie_hash(State{}), emptyTrieHash);
 }
 
 TEST(state, hashed_address)
@@ -58,16 +55,20 @@ TEST(state, hashed_address)
 TEST(state, single_account_v1)
 {
     // Expected value computed in go-ethereum.
+    constexpr auto expected =
+        0x084f337237951e425716a04fb0aaa74111eda9d9c61767f2497697d0a201c92e_bytes32;
 
-    Account a;
-    const auto addr = 0x0000000000000000000000000000000000000002_address;
-    a.balance = 1;
+    State state;
+    constexpr auto addr = 0x0000000000000000000000000000000000000002_address;
+    state.accounts[addr].balance = 1;
 
     Trie trie;
     const auto xkey = keccak256(addr);
-    const auto xval = rlp::encode(a);
+    const auto xval = rlp::encode(state.accounts[addr]);
     trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xval);
-    EXPECT_EQ(hex(trie.hash()), "084f337237951e425716a04fb0aaa74111eda9d9c61767f2497697d0a201c92e");
+    EXPECT_EQ(trie.hash(), expected);
+
+    EXPECT_EQ(state::trie_hash(state), expected);
 }
 
 TEST(state, storage_trie_v1)
