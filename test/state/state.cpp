@@ -9,11 +9,8 @@
 
 namespace evmone::state
 {
-void transition(State& state, const Tx& tx, evmc_revision rev)
+void transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
 {
-    // TODO: VM should be passed as parameter.
-    evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
-
     state.accounts[tx.sender].nonce += 1;
 
     state.accounts[tx.sender].balance -= tx.value;
@@ -31,7 +28,7 @@ void transition(State& state, const Tx& tx, evmc_revision rev)
     const auto gas_cost = gas_used * tx.gas_price;
 
     state.accounts[tx.sender].balance -= gas_cost;
-    state.accounts[0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba_address].balance += gas_cost;
+    state.accounts[block.coinbase].balance += gas_cost;
 }
 
 hash256 trie_hash(const State& state)

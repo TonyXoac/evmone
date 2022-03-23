@@ -2,6 +2,7 @@
 // Copyright 2021 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
+#include <evmone/evmone.h>
 #include <gtest/gtest.h>
 #include <test/state/state.hpp>
 #include <test/state/trie.hpp>
@@ -107,7 +108,14 @@ TEST(state, load_json)
     EXPECT_EQ(tx.to, recipient);
     EXPECT_EQ(tx.value, 0x0186a0);
 
-    state::transition(state, tx, EVMC_BERLIN);
+    evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
+    constexpr auto rev = EVMC_BERLIN;
+
+    BlockInfo block;
+    block.coinbase = from_json<evmc::address>(_t["env"]["currentCoinbase"]);
+    EXPECT_EQ(block.coinbase, coinbase);
+
+    state::transition(state, block, tx, rev, vm);
 
     EXPECT_EQ(state.accounts[recipient].storage[{}].value,
         0x0000000000000000000000000000000000000000000000000000000000000002_bytes32);
@@ -116,6 +124,5 @@ TEST(state, load_json)
     EXPECT_EQ(expected_state_hash,
         0xcd39e0cdd18f8f811911222ae6779341663d0293e1a3d9501da7ac2f4da9b277_bytes32);
 
-    // FIXME:
     EXPECT_EQ(state::trie_hash(state), expected_state_hash);
 }

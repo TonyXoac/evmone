@@ -15,6 +15,11 @@ public:
     std::unordered_map<evmc::address, Account> accounts;
 };
 
+struct BlockInfo
+{
+    evmc::address coinbase;
+};
+
 struct Tx
 {
     bytes data;
@@ -192,7 +197,8 @@ public:
     }
 };
 
-void transition(State& state, const Tx& tx, evmc_revision rev);
+void transition(
+    State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm);
 
 hash256 trie_hash(const State& state);
 
