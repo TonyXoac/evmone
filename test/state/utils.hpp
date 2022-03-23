@@ -53,4 +53,16 @@ inline bytes to_bytes(std::string_view s)
         b.push_back(static_cast<uint8_t>(c));
     return b;
 }
+
+constexpr evmc_revision from_string(std::string_view s) noexcept
+{
+    if (s == "Frontier")
+        return EVMC_FRONTIER;
+    if (s == "Berlin")
+        return EVMC_BERLIN;
+    if (s == "London")
+        return EVMC_LONDON;
+    assert(false && "unknown revision");
+    __builtin_unreachable();
+}
 }  // namespace evmone

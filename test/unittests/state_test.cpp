@@ -71,12 +71,12 @@ TEST(state, load_json)
     const auto& tr = _t["transaction"];
     const auto& pre = _t["pre"];
 
-    state::State state;
+    state::State pre_state;
 
     for (const auto& [j_addr, j_acc] : pre.items())
     {
         const auto addr = from_json<address>(j_addr);
-        auto& acc = state.accounts[addr];
+        auto& acc = pre_state.accounts[addr];
         acc.balance = from_json<intx::uint256>(j_acc["balance"]);
         acc.nonce = from_json<int>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
@@ -86,10 +86,10 @@ TEST(state, load_json)
     const auto origin = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address;
     const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
 
-    EXPECT_EQ(state.accounts[coinbase].balance, 0);
-    EXPECT_EQ(state.accounts[coinbase].nonce, 1);
-    EXPECT_EQ(state.accounts[origin].balance, 0x0de0b6b3a7640000);
-    EXPECT_EQ(state.accounts[recipient].balance, 0x0de0b6b3a7640000);
+    EXPECT_EQ(pre_state.accounts[coinbase].balance, 0);
+    EXPECT_EQ(pre_state.accounts[coinbase].nonce, 1);
+    EXPECT_EQ(pre_state.accounts[origin].balance, 0x0de0b6b3a7640000);
+    EXPECT_EQ(pre_state.accounts[recipient].balance, 0x0de0b6b3a7640000);
 
     state::Tx tx;
     tx.data = from_json<bytes>(tr["data"][0]);
@@ -109,20 +109,17 @@ TEST(state, load_json)
     EXPECT_EQ(tx.value, 0x0186a0);
 
     evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
-    constexpr auto rev = EVMC_BERLIN;
 
     BlockInfo block;
     block.coinbase = from_json<evmc::address>(_t["env"]["currentCoinbase"]);
     EXPECT_EQ(block.coinbase, coinbase);
 
-    state::transition(state, block, tx, rev, vm);
-
-    EXPECT_EQ(state.accounts[recipient].storage[{}].value,
-        0x0000000000000000000000000000000000000000000000000000000000000002_bytes32);
-
-    const auto expected_state_hash = from_json<hash256>(_t["post"]["Berlin"][0]["hash"]);
-    EXPECT_EQ(expected_state_hash,
-        0xcd39e0cdd18f8f811911222ae6779341663d0293e1a3d9501da7ac2f4da9b277_bytes32);
-
-    EXPECT_EQ(state::trie_hash(state), expected_state_hash);
+    for (const auto& [rev_name, post] : _t["post"].items())
+    {
+        const auto expected_state_hash = from_json<hash256>(post[0]["hash"]);
+        const auto rev = from_string(rev_name);
+        auto state = pre_state;
+        state::transition(state, block, tx, rev, vm);
+        EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name;
+    }
 }
