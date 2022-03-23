@@ -153,7 +153,7 @@ public:
 
     bytes32 get_block_hash(int64_t block_number) const noexcept override
     {
-        (void) block_number;
+        (void)block_number;
         assert(false && "not implemented");
         return {};
     }
@@ -195,4 +195,6 @@ public:
 void transition(State& state, const Tx& tx, evmc_revision rev);
 
 hash256 trie_hash(const State& state);
+
+hash256 trie_hash(const std::unordered_map<evmc::bytes32, evmc::storage_value>& storage);
 }  // namespace evmone::state

@@ -30,13 +30,24 @@ hash256 trie_hash(const State& state)
     {
         const auto xkey = keccak256(addr);
 
-        assert(acc.storage.empty());
+        const auto storage_hash = trie_hash(acc.storage);
         const auto balance_bytes = intx::be::store<evmc::uint256be>(acc.balance);
         const auto code_hash = keccak256(acc.code);
-        const auto xacc =
-            rlp::list(acc.nonce, rlp::trim(balance_bytes), state::emptyTrieHash, code_hash);
+        const auto xacc = rlp::list(acc.nonce, rlp::trim(balance_bytes), storage_hash, code_hash);
 
         trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xacc);
+    }
+    return trie.hash();
+}
+
+hash256 trie_hash(const std::unordered_map<evmc::bytes32, evmc::storage_value>& storage)
+{
+    Trie trie;
+    for (const auto& [key, value] : storage)
+    {
+        const auto xkey = keccak256(key);
+        const auto xvalue = rlp::string(rlp::trim(value.value));
+        trie.insert(xkey, xvalue);
     }
     return trie.hash();
 }

@@ -73,14 +73,21 @@ TEST(state, single_account_v1)
 
 TEST(state, storage_trie_v1)
 {
+    constexpr auto expected =
+        0xd9aa83255221f68fdd4931f73f8fe6ea30c191a9619b5fc60ce2914eee1e7e54_bytes32;
+
     const auto key = 0_bytes32;
     const auto value = 0x00000000000000000000000000000000000000000000000000000000000001ff_bytes32;
     const auto xkey = keccak256(key);
     const auto xvalue = rlp::string(rlp::trim(value));
 
-    Trie st;
-    st.insert(xkey, xvalue);
-    EXPECT_EQ(hex(st.hash()), "d9aa83255221f68fdd4931f73f8fe6ea30c191a9619b5fc60ce2914eee1e7e54");
+    Trie trie;
+    trie.insert(xkey, xvalue);
+    EXPECT_EQ(trie.hash(), expected);
+
+    std::unordered_map<evmc::bytes32, evmc::storage_value> storage;
+    storage[key] = value;
+    EXPECT_EQ(state::trie_hash(storage), expected);
 }
 
 TEST(state, trie_ex1)
