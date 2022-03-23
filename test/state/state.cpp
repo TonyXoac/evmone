@@ -25,10 +25,15 @@ void transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     const auto gas_left = vm.execute(host, rev, msg, code.data(), code.size()).gas_left;
 
     const auto gas_used = tx.gas_limit - gas_left + 21000;
-    const auto gas_cost = gas_used * tx.gas_price;
+    const auto sender_fee = gas_used * tx.gas_price;
 
-    state.accounts[tx.sender].balance -= gas_cost;
-    state.accounts[block.coinbase].balance += gas_cost;
+    const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
+    assert(tx.gas_price >= base_fee);
+    const auto priority_fee = tx.gas_price - base_fee;
+    const auto producer_pay = gas_used * priority_fee;
+
+    state.accounts[tx.sender].balance -= sender_fee;
+    state.accounts[block.coinbase].balance += producer_pay;
 }
 
 hash256 trie_hash(const State& state)

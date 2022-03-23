@@ -111,7 +111,9 @@ TEST(state, load_json)
     evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
 
     BlockInfo block;
-    block.coinbase = from_json<evmc::address>(_t["env"]["currentCoinbase"]);
+    const auto& env = _t["env"];
+    block.coinbase = from_json<evmc::address>(env["currentCoinbase"]);
+    block.base_fee = from_json<uint64_t>(env["currentBaseFee"]);
     EXPECT_EQ(block.coinbase, coinbase);
 
     for (const auto& [rev_name, post] : _t["post"].items())

@@ -18,6 +18,7 @@ public:
 struct BlockInfo
 {
     evmc::address coinbase;
+    uint64_t base_fee;
 };
 
 struct Tx
