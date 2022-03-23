@@ -109,6 +109,9 @@ TEST(state, load_json)
 
     state::transition(state, tx, EVMC_LONDON);
 
+    EXPECT_EQ(state.accounts[recipient].storage[{}].value,
+        0x0000000000000000000000000000000000000000000000000000000000000002_bytes32);
+
     const auto expected_state_hash = from_json<hash256>(_t["post"]["London"][0]["hash"]);
     EXPECT_EQ(expected_state_hash,
         0xe8010ce590f401c9d61fef8ab05bea9bcec24281b795e5868809bc4e515aa530_bytes32);
