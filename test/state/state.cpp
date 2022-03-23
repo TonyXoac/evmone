@@ -14,13 +14,24 @@ void transition(State& state, const Tx& tx, evmc_revision rev)
     // TODO: VM should be passed as parameter.
     evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
 
+    state.accounts[tx.sender].nonce += 1;
+
+    state.accounts[tx.sender].balance -= tx.value;
+    state.accounts[tx.to].balance += tx.value;
+
     StateHost host{state};
 
     bytes_view code = state.accounts[tx.to].code;
     const auto value_be = intx::be::store<evmc::uint256be>(tx.value);
     evmc_message msg{EVMC_CALL, 0, 0, tx.gas_limit, tx.to, tx.sender, tx.data.data(),
         tx.data.size(), value_be, {}, tx.to};
-    vm.execute(host, rev, msg, code.data(), code.size());
+    const auto gas_left = vm.execute(host, rev, msg, code.data(), code.size()).gas_left;
+
+    const auto gas_used = tx.gas_limit - gas_left + 21000;
+    const auto gas_cost = gas_used * tx.gas_price;
+
+    state.accounts[tx.sender].balance -= gas_cost;
+    state.accounts[0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba_address].balance += gas_cost;
 }
 
 hash256 trie_hash(const State& state)
