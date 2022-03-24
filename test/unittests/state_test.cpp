@@ -60,13 +60,8 @@ uint64_t from_json<uint64_t>(const json::json& j)
     return static_cast<uint64_t>(std::stoull(j.get<std::string>(), nullptr, 16));
 }
 
-TEST(state, load_json)
+static void run_state_test(const json::json& j)
 {
-    const auto file = "/home/chfast/Projects/ethereum/tests/GeneralStateTests/stExample/add11.json";
-    std::ifstream in{file};
-    json::json j;
-    in >> j;
-
     const auto& _t = j["add11"];
     const auto& tr = _t["transaction"];
     const auto& pre = _t["pre"];
@@ -123,5 +118,21 @@ TEST(state, load_json)
         auto state = pre_state;
         state::transition(state, block, tx, rev, vm);
         EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name;
+    }
+}
+
+TEST(state, state_tests)
+{
+    const std::string root_dir = "/home/chfast/Projects/ethereum/tests/GeneralStateTests";
+    const std::string test_files[] = {
+        "stExample/add11.json",
+    };
+
+    for (const auto& test_file : test_files)
+    {
+        json::json j;
+        std::ifstream{root_dir + '/' + test_file} >> j;
+        SCOPED_TRACE(test_file);
+        run_state_test(j);
     }
 }
