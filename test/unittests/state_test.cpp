@@ -87,21 +87,16 @@ static void run_state_test(const json::json& j)
     EXPECT_EQ(pre_state.accounts[recipient].balance, 0x0de0b6b3a7640000);
 
     state::Tx tx;
-    tx.data = from_json<bytes>(tr["data"][0]);
-    tx.gas_limit = from_json<int64_t>(tr["gasLimit"][0]);
+    // Common transaction part.
     tx.gas_price = from_json<intx::uint256>(tr["gasPrice"]);
     tx.nonce = from_json<uint64_t>(tr["nonce"]);
     tx.sender = from_json<evmc::address>(tr["sender"]);
     tx.to = from_json<evmc::address>(tr["to"]);
-    tx.value = from_json<intx::uint256>(tr["value"][0]);
 
-    EXPECT_EQ(tx.data, bytes_view{});
-    EXPECT_EQ(tx.gas_limit, 400000);
     EXPECT_EQ(tx.gas_price, 10);
     EXPECT_EQ(tx.nonce, 0);
     EXPECT_EQ(tx.sender, origin);
     EXPECT_EQ(tx.to, recipient);
-    EXPECT_EQ(tx.value, 0x0186a0);
 
     evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
 
@@ -111,13 +106,21 @@ static void run_state_test(const json::json& j)
     block.base_fee = from_json<uint64_t>(env["currentBaseFee"]);
     EXPECT_EQ(block.coinbase, coinbase);
 
-    for (const auto& [rev_name, post] : _t["post"].items())
+    for (const auto& [rev_name, posts] : _t["post"].items())
     {
-        const auto expected_state_hash = from_json<hash256>(post[0]["hash"]);
         const auto rev = from_string(rev_name);
-        auto state = pre_state;
-        state::transition(state, block, tx, rev, vm);
-        EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name;
+        for (const auto& [_, post] : posts.items())
+        {
+            const auto expected_state_hash = from_json<hash256>(post["hash"]);
+            const auto& indexes = post["indexes"];
+            tx.data = from_json<bytes>(tr["data"][indexes["data"].get<size_t>()]);
+            tx.gas_limit = from_json<int64_t>(tr["gasLimit"][indexes["gas"].get<size_t>()]);
+            tx.value = from_json<intx::uint256>(tr["value"][indexes["value"].get<size_t>()]);
+
+            auto state = pre_state;
+            state::transition(state, block, tx, rev, vm);
+            EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name;
+        }
     }
 }
 
