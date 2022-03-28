@@ -100,6 +100,9 @@ static void run_state_test(const json::json& j)
     block.gas_limit = from_json<int64_t>(env["currentGasLimit"]);
     block.coinbase = from_json<evmc::address>(env["currentCoinbase"]);
     block.base_fee = from_json<uint64_t>(env["currentBaseFee"]);
+    block.difficulty = from_json<evmc::uint256be>(env["currentDifficulty"]);
+    block.number = from_json<int64_t>(env["currentNumber"]);
+    block.timestamp = from_json<int64_t>(env["currentTimestamp"]);
 
     for (const auto& [rev_name, posts] : _t["post"].items())
     {

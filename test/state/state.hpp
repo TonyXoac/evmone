@@ -17,10 +17,16 @@ public:
 
 struct BlockInfo
 {
+    int64_t number;
+    int64_t timestamp;
     int64_t gas_limit;
     evmc::address coinbase;
+    evmc::uint256be difficulty;
+    evmc::bytes32 chain_id;
     uint64_t base_fee;
 };
+
+using AccessList = std::vector<std::pair<evmc::address, std::vector<evmc::bytes32>>>;
 
 struct Tx
 {
@@ -32,6 +38,7 @@ struct Tx
     evmc::address sender;
     evmc::address to;
     intx::uint256 value;
+    AccessList access_list;
 };
 
 // TODO: Cleanup.
@@ -41,9 +48,13 @@ using evmc::uint256be;
 class StateHost : public evmc::Host
 {
     State& m_state;
+    const BlockInfo& m_block;
+    const Tx& m_tx;
 
 public:
-    explicit StateHost(State& state) noexcept : m_state{state} {}
+    explicit StateHost(State& state, const BlockInfo& block, const Tx& tx) noexcept
+      : m_state{state}, m_block{block}, m_tx{tx}
+    {}
 
     bool account_exists(const address& addr) const noexcept override
     {
@@ -155,8 +166,17 @@ public:
 
     evmc_tx_context get_tx_context() const noexcept override
     {
-        assert(false && "not implemented");
-        return {};
+        return evmc_tx_context{
+            intx::be::store<uint256be>(m_tx.max_gas_price),
+            m_tx.sender,
+            m_block.coinbase,
+            m_block.number,
+            m_block.timestamp,
+            m_block.gas_limit,
+            m_block.difficulty,
+            m_block.chain_id,
+            evmc::uint256be{m_block.base_fee},
+        };
     }
 
     bytes32 get_block_hash(int64_t block_number) const noexcept override
