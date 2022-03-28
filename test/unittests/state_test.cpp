@@ -135,6 +135,16 @@ static void run_state_test(const json::json& j)
             auto state = pre_state;
             state::transition(state, block, tx, rev, vm);
 
+            std::cout << "--- " << rev_name << " " << i << "\n";
+            for (const auto& [addr, acc] : state.accounts)
+            {
+                std::cout << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << ": "
+                          << to_string(acc.balance) << "\n";
+                for (const auto& [k, v] : acc.storage)
+                    std::cout << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
+                              << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
+            }
+
             EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name << " " << i;
             ++i;
         }
@@ -148,8 +158,8 @@ TEST(state, state_tests)
         "stExample/accessListExample.json",
         "stExample/add11.json",
         "stExample/add11_yml.json",
-        // "stExample/basefeeExample.json",  // Requires EIP-1559 tx
-        // "stExample/eip1559.json",         // Requires EIP-1559 tx
+        "stExample/basefeeExample.json",
+        "stExample/eip1559.json",
         "stExample/indexesOmitExample.json",
         // "stExample/invalidTr.json",
         "stExample/labelsExample.json",

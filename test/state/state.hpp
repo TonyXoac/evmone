@@ -166,8 +166,12 @@ public:
 
     evmc_tx_context get_tx_context() const noexcept override
     {
+        const auto priority_gas_price =
+            std::min(m_tx.max_priority_gas_price, m_tx.max_gas_price - m_block.base_fee);
+        const auto effective_gas_price = m_block.base_fee + priority_gas_price;
+
         return evmc_tx_context{
-            intx::be::store<uint256be>(m_tx.max_gas_price),
+            intx::be::store<uint256be>(effective_gas_price),
             m_tx.sender,
             m_block.coinbase,
             m_block.number,
