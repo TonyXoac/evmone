@@ -79,7 +79,16 @@ static void run_state_test(const json::json& j)
 
     state::Tx tx;
     // Common transaction part.
-    tx.gas_price = from_json<intx::uint256>(tr["gasPrice"]);
+    if (tr.contains("gasPrice"))
+    {
+        tx.max_gas_price = from_json<intx::uint256>(tr["gasPrice"]);
+        tx.max_priority_gas_price = tx.max_gas_price;
+    }
+    else
+    {
+        tx.max_gas_price = from_json<intx::uint256>(tr["maxFeePerGas"]);
+        tx.max_priority_gas_price = from_json<intx::uint256>(tr["maxPriorityFeePerGas"]);
+    }
     tx.nonce = from_json<uint64_t>(tr["nonce"]);
     tx.sender = from_json<evmc::address>(tr["sender"]);
     tx.to = from_json<evmc::address>(tr["to"]);

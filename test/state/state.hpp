@@ -26,7 +26,8 @@ struct Tx
 {
     bytes data;
     int64_t gas_limit;
-    intx::uint256 gas_price;
+    intx::uint256 max_gas_price;
+    intx::uint256 max_priority_gas_price;
     uint64_t nonce;
     evmc::address sender;
     evmc::address to;

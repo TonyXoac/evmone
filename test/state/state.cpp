@@ -42,14 +42,14 @@ void transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     const auto intrinsic_gas = tx.gas_limit + data_gas + 21000;
     assert(block.gas_limit >= intrinsic_gas);
-    assert(state.accounts[tx.sender].balance >= intrinsic_gas * tx.gas_price);
+    assert(state.accounts[tx.sender].balance >= intrinsic_gas * tx.max_gas_price);
 
     const auto gas_used = tx.gas_limit - gas_left + 21000 + data_gas;
-    const auto sender_fee = gas_used * tx.gas_price;
+    const auto sender_fee = gas_used * tx.max_gas_price;
 
     const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
-    assert(tx.gas_price >= base_fee);
-    const auto priority_fee = tx.gas_price - base_fee;
+    assert(tx.max_gas_price >= base_fee);
+    const auto priority_fee = tx.max_gas_price - base_fee;
     assert(priority_fee >= 0);
     const auto producer_pay = gas_used * priority_fee;
 
