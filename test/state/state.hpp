@@ -17,6 +17,7 @@ public:
 
 struct BlockInfo
 {
+    int64_t gas_limit;
     evmc::address coinbase;
     uint64_t base_fee;
 };

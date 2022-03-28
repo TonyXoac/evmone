@@ -40,6 +40,10 @@ void transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
         tx.data.size(), value_be, {}, tx.to};
     const auto gas_left = vm.execute(host, rev, msg, code.data(), code.size()).gas_left;
 
+    const auto intrinsic_gas = tx.gas_limit + data_gas + 21000;
+    assert(block.gas_limit >= intrinsic_gas);
+    assert(state.accounts[tx.sender].balance >= intrinsic_gas * tx.gas_price);
+
     const auto gas_used = tx.gas_limit - gas_left + 21000 + data_gas;
     const auto sender_fee = gas_used * tx.gas_price;
 

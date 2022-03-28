@@ -88,6 +88,7 @@ static void run_state_test(const json::json& j)
 
     BlockInfo block;
     const auto& env = _t["env"];
+    block.gas_limit = from_json<int64_t>(env["currentGasLimit"]);
     block.coinbase = from_json<evmc::address>(env["currentCoinbase"]);
     block.base_fee = from_json<uint64_t>(env["currentBaseFee"]);
 
