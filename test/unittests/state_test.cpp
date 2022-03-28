@@ -5,7 +5,6 @@
 #include <evmone/evmone.h>
 #include <gtest/gtest.h>
 #include <test/state/state.hpp>
-#include <test/state/trie.hpp>
 
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -62,7 +61,8 @@ uint64_t from_json<uint64_t>(const json::json& j)
 
 static void run_state_test(const json::json& j)
 {
-    const auto& _t = j["add11"];
+    SCOPED_TRACE(j.begin().key());
+    const auto& _t = j.begin().value();
     const auto& tr = _t["transaction"];
     const auto& pre = _t["pre"];
 
@@ -77,15 +77,6 @@ static void run_state_test(const json::json& j)
         acc.code = from_json<bytes>(j_acc["code"]);
     }
 
-    const auto coinbase = 0x2adc25665018aa1fe0e6bc666dac8fc2697ff9ba_address;
-    const auto origin = 0xa94f5374fce5edbc8e2a8697c15331677e6ebf0b_address;
-    const auto recipient = 0x095e7baea6a6c7c4c2dfeb977efac326af552d87_address;
-
-    EXPECT_EQ(pre_state.accounts[coinbase].balance, 0);
-    EXPECT_EQ(pre_state.accounts[coinbase].nonce, 1);
-    EXPECT_EQ(pre_state.accounts[origin].balance, 0x0de0b6b3a7640000);
-    EXPECT_EQ(pre_state.accounts[recipient].balance, 0x0de0b6b3a7640000);
-
     state::Tx tx;
     // Common transaction part.
     tx.gas_price = from_json<intx::uint256>(tr["gasPrice"]);
@@ -93,22 +84,18 @@ static void run_state_test(const json::json& j)
     tx.sender = from_json<evmc::address>(tr["sender"]);
     tx.to = from_json<evmc::address>(tr["to"]);
 
-    EXPECT_EQ(tx.gas_price, 10);
-    EXPECT_EQ(tx.nonce, 0);
-    EXPECT_EQ(tx.sender, origin);
-    EXPECT_EQ(tx.to, recipient);
-
     evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
 
     BlockInfo block;
     const auto& env = _t["env"];
     block.coinbase = from_json<evmc::address>(env["currentCoinbase"]);
     block.base_fee = from_json<uint64_t>(env["currentBaseFee"]);
-    EXPECT_EQ(block.coinbase, coinbase);
 
     for (const auto& [rev_name, posts] : _t["post"].items())
     {
+        SCOPED_TRACE(rev_name);
         const auto rev = from_string(rev_name);
+        int i = 0;
         for (const auto& [_, post] : posts.items())
         {
             const auto expected_state_hash = from_json<hash256>(post["hash"]);
@@ -119,7 +106,9 @@ static void run_state_test(const json::json& j)
 
             auto state = pre_state;
             state::transition(state, block, tx, rev, vm);
-            EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name;
+
+            EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name << " " << i;
+            ++i;
         }
     }
 }
@@ -128,7 +117,17 @@ TEST(state, state_tests)
 {
     const std::string root_dir = "/home/chfast/Projects/ethereum/tests/GeneralStateTests";
     const std::string test_files[] = {
+        // "stExample/accessListExample.json",
         "stExample/add11.json",
+        "stExample/add11_yml.json",
+        // "stExample/basefeeExample.json",  // Requires EIP-1559 tx
+        // "stExample/eip1559.json",         // Requires EIP-1559 tx
+        "stExample/indexesOmitExample.json",
+        // "stExample/invalidTr.json",
+        "stExample/labelsExample.json",
+        "stExample/rangesExample.json",
+        // "stExample/solidityExample.json",  // Requires CALL
+        "stExample/yulExample.json",
     };
 
     for (const auto& test_file : test_files)
