@@ -213,6 +213,13 @@ public:
 
     evmc_access_status access_storage(const address& addr, const bytes32& key) noexcept override
     {
+        // Check tx access list.
+        for (const auto& [a, storage_keys] : m_tx.access_list)
+        {
+            if (a == addr && std::count(storage_keys.begin(), storage_keys.end(), key) != 0)
+                return EVMC_ACCESS_WARM;
+        }
+
         auto& value = m_state.accounts[addr].storage[key];
         const auto access_status = value.access_status;
         value.access_status = EVMC_ACCESS_WARM;
