@@ -52,6 +52,16 @@ void transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     assert(state.accounts[tx.sender].balance >= sender_fee);
     state.accounts[tx.sender].balance -= sender_fee;
     state.accounts[block.coinbase].balance += producer_pay;
+
+    // Pretend all accounts are touched and erase empty ones.
+    for (auto it = state.accounts.begin(); it != state.accounts.end();)
+    {
+        const auto& acc = it->second;
+        if (acc.balance == 0 && acc.nonce == 0 && acc.code.empty())
+            state.accounts.erase(it++);
+        else
+            ++it;
+    }
 }
 
 hash256 trie_hash(const State& state)
