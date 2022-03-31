@@ -231,7 +231,7 @@ public:
     }
 };
 
-void transition(
+[[nodiscard]] bool transition(
     State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm);
 
 hash256 trie_hash(const State& state);

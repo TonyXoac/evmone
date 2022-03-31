@@ -133,7 +133,10 @@ static void run_state_test(const json::json& j)
             }
 
             auto state = pre_state;
-            state::transition(state, block, tx, rev, vm);
+
+            const auto expect_tx_exception = post.contains("expectException");
+            const auto tx_status = state::transition(state, block, tx, rev, vm);
+            EXPECT_NE(tx_status, expect_tx_exception);
 
             std::cout << "--- " << rev_name << " " << i << "\n";
             for (const auto& [addr, acc] : state.accounts)
@@ -161,7 +164,7 @@ TEST(state, state_tests)
         "stExample/basefeeExample.json",
         "stExample/eip1559.json",
         "stExample/indexesOmitExample.json",
-        // "stExample/invalidTr.json",
+        "stExample/invalidTr.json",
         "stExample/labelsExample.json",
         "stExample/rangesExample.json",
         // "stExample/solidityExample.json",  // Requires CALL
