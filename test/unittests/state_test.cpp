@@ -138,17 +138,19 @@ static void run_state_test(const json::json& j)
             const auto tx_status = state::transition(state, block, tx, rev, vm);
             EXPECT_NE(tx_status, expect_tx_exception);
 
-            std::cout << "--- " << rev_name << " " << i << "\n";
+            std::ostringstream state_dump;
+
+            state_dump << "--- " << rev_name << " " << i << "\n";
             for (const auto& [addr, acc] : state.accounts)
             {
-                std::cout << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << ": "
-                          << to_string(acc.balance) << "\n";
+                state_dump << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << ": "
+                           << to_string(acc.balance) << "\n";
                 for (const auto& [k, v] : acc.storage)
-                    std::cout << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
-                              << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
+                    state_dump << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
+                               << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
             }
 
-            EXPECT_EQ(state::trie_hash(state), expected_state_hash) << rev_name << " " << i;
+            EXPECT_EQ(state::trie_hash(state), expected_state_hash) << state_dump.str();
             ++i;
         }
     }
