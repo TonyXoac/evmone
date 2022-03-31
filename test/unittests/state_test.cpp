@@ -104,6 +104,10 @@ static void run_state_test(const json::json& j)
     block.number = from_json<int64_t>(env["currentNumber"]);
     block.timestamp = from_json<int64_t>(env["currentTimestamp"]);
 
+    // TODO: Chain ID is expected to be 1.
+    block.chain_id = {};
+    block.chain_id.bytes[31] = 1;
+
     const auto access_lists_it = tr.find("accessLists");
 
     for (const auto& [rev_name, posts] : _t["post"].items())
@@ -171,6 +175,9 @@ TEST(state, state_tests)
         "stExample/rangesExample.json",
         // "stExample/solidityExample.json",  // Requires CALL
         "stExample/yulExample.json",
+
+        "stChainId/chainId.json",
+        "stChainId/chainIdGasCost.json",
     };
 
     for (const auto& test_file : test_files)
