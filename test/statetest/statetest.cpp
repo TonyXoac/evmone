@@ -11,6 +11,7 @@ namespace json = nlohmann;
 
 using namespace evmone;
 using namespace evmone::state;
+using namespace std::string_view_literals;
 
 template <typename T>
 T from_json(const json::json& j) = delete;
@@ -177,6 +178,14 @@ public:
 
 int main(int argc, char* argv[])
 {
+    constexpr auto builtin_filter =
+        "--gtest_filter=stExample.*:stChainId.*:-stExample.solidityExample";
+
+    const auto argv_end = argv + argc;
+    if (const auto filter_arg = std::find(argv, argv_end, "--gtest_filter=builtin"sv);
+        filter_arg != argv_end)
+        *filter_arg = const_cast<char*>(builtin_filter);
+
     testing::InitGoogleTest(&argc, argv);
 
     if (argc != 2)
