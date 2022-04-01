@@ -6,6 +6,7 @@
 
 #include "account.hpp"
 #include "utils.hpp"
+#include <unordered_set>
 
 namespace evmone::state
 {
@@ -50,6 +51,7 @@ class StateHost : public evmc::Host
     State& m_state;
     const BlockInfo& m_block;
     const Tx& m_tx;
+    std::unordered_set<evmc::address> m_accessed_addresses;
 
 public:
     explicit StateHost(State& state, const BlockInfo& block, const Tx& tx) noexcept
@@ -203,16 +205,16 @@ public:
 
     evmc_access_status access_account(const address& addr) noexcept override
     {
-        // Check if the address have been already accessed.
-        const auto already_accessed = false;
-
         // Accessing precompiled contracts is always warm.
         if (addr >= 0x0000000000000000000000000000000000000001_address &&
             addr <= 0x0000000000000000000000000000000000000009_address)
             return EVMC_ACCESS_WARM;
 
-        assert(false && "not implemented");
-        return already_accessed ? EVMC_ACCESS_WARM : EVMC_ACCESS_COLD;
+        if (m_accessed_addresses.count(addr) != 0)
+            return EVMC_ACCESS_WARM;
+
+        m_accessed_addresses.insert(addr);
+        return EVMC_ACCESS_COLD;
     }
 
     evmc_access_status access_storage(const address& addr, const bytes32& key) noexcept override
