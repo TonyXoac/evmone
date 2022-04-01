@@ -48,14 +48,17 @@ using evmc::uint256be;
 
 class StateHost : public evmc::Host
 {
+    evmc_revision m_rev;
+    evmc::VM& m_vm;
     State& m_state;
     const BlockInfo& m_block;
     const Tx& m_tx;
     std::unordered_set<evmc::address> m_accessed_addresses;
 
 public:
-    explicit StateHost(State& state, const BlockInfo& block, const Tx& tx) noexcept
-      : m_state{state}, m_block{block}, m_tx{tx}
+    explicit StateHost(evmc_revision rev, evmc::VM& vm, State& state, const BlockInfo& block,
+        const Tx& tx) noexcept
+      : m_rev{rev}, m_vm{vm}, m_state{state}, m_block{block}, m_tx{tx}
     {}
 
     bool account_exists(const address& addr) const noexcept override
@@ -161,9 +164,9 @@ public:
 
     evmc::result call(const evmc_message& msg) noexcept override
     {
-        (void)msg;
-        assert(false && "not implemented");
-        return {EVMC_INTERNAL_ERROR, 0, nullptr, 0};
+        const auto& code = m_state.accounts[msg.code_address].code;
+        auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+        return result;
     }
 
     evmc_tx_context get_tx_context() const noexcept override

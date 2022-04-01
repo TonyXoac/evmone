@@ -54,7 +54,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     state.accounts[tx.sender].balance -= tx.value;
     state.accounts[tx.to].balance += tx.value;
 
-    StateHost host{state, block, tx};
+    StateHost host{rev, vm, state, block, tx};
 
     bytes_view code = state.accounts[tx.to].code;
     const auto value_be = intx::be::store<evmc::uint256be>(tx.value);
