@@ -6,6 +6,7 @@
 
 #include "account.hpp"
 #include "utils.hpp"
+#include <iostream>
 #include <unordered_set>
 
 namespace evmone::state
@@ -164,8 +165,26 @@ public:
 
     evmc::result call(const evmc_message& msg) noexcept override
     {
+        std::cout << "CALL " << msg.kind << "\n"
+                  << "  gas: " << msg.gas << "\n"
+                  << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) << "\n";
+
+        assert(msg.kind != EVMC_CREATE2);
+        if (msg.kind == EVMC_CREATE)
+        {
+            auto create_msg = msg;
+            create_msg.input_data = nullptr;
+            create_msg.input_size = 0;
+            auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
+            std::cout << "- RESULT " << result.status_code << "\n"
+                      << "  gas: " << result.gas_left << "\n";
+            return result;
+        }
+
         const auto& code = m_state.accounts[msg.code_address].code;
         auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+        std::cout << "- RESULT " << result.status_code << "\n"
+                  << "  gas: " << result.gas_left << "\n";
         return result;
     }
 
