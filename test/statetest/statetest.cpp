@@ -180,14 +180,19 @@ int main(int argc, char* argv[])
 {
     constexpr auto builtin_filter =
         "--gtest_filter="
+        "stCallCreateCallCodeTest.call*:"
         // "stEIP2930.coinbaseT2:"
         // "stEIP2930.addressOpcodes:"
         "stEIP2930.transactionCosts:"
         // "stMemoryTest.log1_dejavu:"
         "stChainId.*:"
-        "stExample.*:";
-        // "-"
-        // "stExample.solidityExample";
+        "stExample.*:"
+        "-"
+        "stExample.solidityExample:"
+        "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
+        "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
+        /**/
+        ;
 
     const auto argv_end = argv + argc;
     if (const auto filter_arg = std::find(argv, argv_end, "--gtest_filter=builtin"sv);

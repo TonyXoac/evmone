@@ -182,9 +182,12 @@ public:
         }
 
         const auto& code = m_state.accounts[msg.code_address].code;
+        const auto state_snapshot = m_state;
         auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
         std::cout << "- RESULT " << result.status_code << "\n"
                   << "  gas: " << result.gas_left << "\n";
+        if (result.status_code != EVMC_SUCCESS)
+            m_state = state_snapshot;
         return result;
     }
 

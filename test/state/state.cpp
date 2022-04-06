@@ -51,6 +51,8 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     state.accounts[tx.sender].nonce += 1;
 
+    const auto state_snapshot = state;
+
     state.accounts[tx.sender].balance -= tx.value;
     state.accounts[tx.to].balance += tx.value;
 
@@ -61,7 +63,11 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
         tx.data.size(), value_be, {}, tx.to};
-    const auto gas_left = vm.execute(host, rev, msg, code.data(), code.size()).gas_left;
+    const auto result = vm.execute(host, rev, msg, code.data(), code.size());
+    const auto gas_left = result.gas_left;
+
+    if (result.status_code != EVMC_SUCCESS)
+        state = state_snapshot;
 
     const auto gas_used = tx.gas_limit - gas_left;
 
