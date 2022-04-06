@@ -58,6 +58,18 @@ constexpr evmc_revision from_string(std::string_view s) noexcept
 {
     if (s == "Frontier")
         return EVMC_FRONTIER;
+    if (s == "Homestead")
+        return EVMC_HOMESTEAD;
+    if (s == "EIP150")
+        return EVMC_TANGERINE_WHISTLE;
+    if (s == "EIP158")
+        return EVMC_SPURIOUS_DRAGON;
+    if (s == "Byzantium")
+        return EVMC_BYZANTIUM;
+    if (s == "Constantinople")
+        return EVMC_CONSTANTINOPLE;
+    if (s == "ConstantinopleFix")
+        return EVMC_PETERSBURG;
     if (s == "Istanbul")
         return EVMC_ISTANBUL;
     if (s == "Berlin")

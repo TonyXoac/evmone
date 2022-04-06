@@ -189,6 +189,8 @@ int main(int argc, char* argv[])
         "stExample.*:"
         "stMemoryTest.*:"
         // "stShift.*:"
+        "stSLoadTest.*:"
+        // "stStackTests.*:"
         "-"
         "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
         "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
