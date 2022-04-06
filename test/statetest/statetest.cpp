@@ -25,7 +25,11 @@ address from_json<address>(const json::json& j)
 template <>
 hash256 from_json<hash256>(const json::json& j)
 {
-    return evmc::literals::internal::from_hex<hash256>(j.get<std::string>().c_str() + 2);
+    const auto bytes = from_hex(j.get<std::string>());
+    assert(bytes.size() <= 32);
+    hash256 h{};
+    std::memcpy(&h.bytes[32 - bytes.size()], bytes.data(), bytes.size());
+    return h;
 }
 
 template <>
@@ -74,6 +78,9 @@ static void run_state_test(const json::json& j)
         acc.balance = from_json<intx::uint256>(j_acc["balance"]);
         acc.nonce = from_json<int>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
+
+        for (const auto& [key, value] : j_acc["storage"].items())
+            acc.storage[from_json<bytes32>(key)] = from_json<bytes32>(value);
     }
 
     state::Tx tx;
