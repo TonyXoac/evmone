@@ -191,6 +191,7 @@ int main(int argc, char* argv[])
         // "stShift.*:"
         "stSLoadTest.*:"
         // "stStackTests.*:"
+        "VMTests/*.*:"
         "-"
         "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
         "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
@@ -198,6 +199,13 @@ int main(int argc, char* argv[])
         "stMemoryTest.buffer*:"
         "stMemoryTest.memCopySelf:"
         "stMemoryTest.oog:"
+        "VMTests/vmArithmeticTest.fib:"
+        "VMTests/vmIO*.*:"
+        "VMTests/vmLogTest.*:"
+        "VMTests/vmPerformance.*:"
+        "VMTests/vmTests.blockInfo:"
+        "VMTests/vmTests.envInfo:"
+        "VMTests/vmTests.suicide:"
         /**/
         ;
 
