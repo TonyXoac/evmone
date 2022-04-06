@@ -73,7 +73,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     const auto max_refund_quotient = rev >= EVMC_LONDON ? 5 : 2;
     const auto refund_limit = gas_used / max_refund_quotient;
-    const auto refund_raw = host.get_refund();
+    const auto refund_raw = (result.status_code == EVMC_SUCCESS) ? host.get_refund() : 0;
     const auto refund = std::min(refund_raw, refund_limit);
     gas_used -= refund;
 
@@ -94,6 +94,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     state.accounts[block.coinbase].balance += producer_pay;
 
     // Apply destructs.
+    assert(host.get_destructs().empty() || result.status_code == EVMC_SUCCESS);
     for (const auto& addr : host.get_destructs())
         state.accounts.erase(addr);
 

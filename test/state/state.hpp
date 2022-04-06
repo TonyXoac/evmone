@@ -167,6 +167,10 @@ public:
 
     void selfdestruct(const address& addr, const address& beneficiary) noexcept override
     {
+        // Do not register the same selfdestruct twice.
+        if (std::count(std::begin(m_destructs), std::end(m_destructs), addr) != 0)
+            return;
+
         auto& acc = m_state.accounts[addr];
 
         // Immediately transfer all balance to beneficiary.
@@ -197,13 +201,21 @@ public:
             return result;
         }
 
+        auto state_snapshot = m_state;
+        const auto refund_snapshot = m_refund;
+        auto destructs_snapshot = m_destructs;
+
         const auto& code = m_state.accounts[msg.code_address].code;
-        const auto state_snapshot = m_state;
         auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
         std::cout << "- RESULT " << result.status_code << "\n"
                   << "  gas: " << result.gas_left << "\n";
         if (result.status_code != EVMC_SUCCESS)
-            m_state = state_snapshot;
+        {
+            // Revert.
+            m_state = std::move(state_snapshot);
+            m_refund = refund_snapshot;
+            m_destructs = std::move(destructs_snapshot);
+        }
         return result;
     }
 

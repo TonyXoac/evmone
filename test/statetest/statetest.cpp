@@ -194,8 +194,10 @@ int main(int argc, char* argv[])
         "stEIP2930.transactionCosts:"
         "stExample.*:"
         "stMemoryTest.*:"
-        // "stShift.*:"
+        "stRefundTest.*:"
+        "stShift.*:"
         "stSLoadTest.*:"
+        // "stSStoreTest.*:"
         // "stStackTests.*:"
         "VMTests/*.*:"
         "-"
@@ -205,13 +207,9 @@ int main(int argc, char* argv[])
         "stMemoryTest.buffer*:"
         "stMemoryTest.memCopySelf:"
         "stMemoryTest.oog:"
-        "VMTests/vmArithmeticTest.fib:"
-        "VMTests/vmIO*.*:"
-        "VMTests/vmLogTest.*:"
+        "VMTests/vmIOandFlowOperations.loopsConditionals:"
         "VMTests/vmPerformance.*:"
-        "VMTests/vmTests.blockInfo:"
         "VMTests/vmTests.envInfo:"
-        "VMTests/vmTests.suicide:"
         /**/
         ;
 
