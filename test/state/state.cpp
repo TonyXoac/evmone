@@ -115,6 +115,11 @@ hash256 trie_hash(const std::unordered_map<evmc::bytes32, evmc::storage_value>& 
     Trie trie;
     for (const auto& [key, value] : storage)
     {
+        // Skip zero values which mean "delete".
+        // TODO: This probably should be handled in Host.
+        if (is_zero(value.value))
+            continue;
+
         const auto xkey = keccak256(key);
         const auto xvalue = rlp::string(rlp::trim(value.value));
         trie.insert(xkey, xvalue);

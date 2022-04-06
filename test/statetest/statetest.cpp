@@ -146,8 +146,8 @@ static void run_state_test(const json::json& j)
             state_dump << "--- " << rev_name << " " << i << "\n";
             for (const auto& [addr, acc] : state.accounts)
             {
-                state_dump << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << ": "
-                           << to_string(acc.balance) << "\n";
+                state_dump << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << " [" << acc.nonce
+                           << "]: " << to_string(acc.balance) << "\n";
                 for (const auto& [k, v] : acc.storage)
                     state_dump << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
                                << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
