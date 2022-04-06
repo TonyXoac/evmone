@@ -93,6 +93,10 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     state.accounts[tx.sender].balance -= sender_fee;
     state.accounts[block.coinbase].balance += producer_pay;
 
+    // Apply destructs.
+    for (const auto& addr : host.get_destructs())
+        state.accounts.erase(addr);
+
     // Pretend all accounts are touched and erase empty ones.
     for (auto it = state.accounts.begin(); it != state.accounts.end();)
     {

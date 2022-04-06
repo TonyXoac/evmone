@@ -56,6 +56,7 @@ class StateHost : public evmc::Host
     const Tx& m_tx;
     std::unordered_set<evmc::address> m_accessed_addresses;
     int64_t m_refund = 0;
+    std::vector<evmc::address> m_destructs;
 
 public:
     explicit StateHost(evmc_revision rev, evmc::VM& vm, State& state, const BlockInfo& block,
@@ -64,6 +65,8 @@ public:
     {}
 
     [[nodiscard]] int64_t get_refund() const noexcept { return m_refund; }
+
+    [[nodiscard]] const auto& get_destructs() const noexcept { return m_destructs; }
 
     bool account_exists(const address& addr) const noexcept override
     {
@@ -164,9 +167,16 @@ public:
 
     void selfdestruct(const address& addr, const address& beneficiary) noexcept override
     {
-        (void)addr;
-        (void)beneficiary;
-        assert(false && "not implemented");
+        auto& acc = m_state.accounts[addr];
+
+        // Immediately transfer all balance to beneficiary.
+        if (addr != beneficiary)
+            m_state.accounts[beneficiary].balance += acc.balance;
+        acc.balance = 0;
+
+        m_destructs.push_back(addr);
+        if (m_rev < EVMC_LONDON)
+            m_refund += 24000;
     }
 
     evmc::result call(const evmc_message& msg) noexcept override
@@ -236,6 +246,11 @@ public:
 
     evmc_access_status access_account(const address& addr) noexcept override
     {
+        // Transaction {sender,to} are always warm.
+        if (addr == m_tx.to)
+            return EVMC_ACCESS_WARM;
+        assert(addr != m_tx.sender);
+
         // Accessing precompiled contracts is always warm.
         if (addr >= 0x0000000000000000000000000000000000000001_address &&
             addr <= 0x0000000000000000000000000000000000000009_address)
