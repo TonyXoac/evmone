@@ -225,7 +225,7 @@ public:
         (void)data_size;
         (void)topics;
         (void)topics_count;
-        assert(false && "not implemented");
+        // FIXME: Store logs.
     }
 
     evmc_access_status access_account(const address& addr) noexcept override

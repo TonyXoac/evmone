@@ -154,6 +154,7 @@ static void run_state_test(const json::json& j)
             }
 
             EXPECT_EQ(state::trie_hash(state), expected_state_hash) << state_dump.str();
+            // FIXME: Check logs trie hash.
             ++i;
         }
     }
@@ -181,16 +182,20 @@ int main(int argc, char* argv[])
     constexpr auto builtin_filter =
         "--gtest_filter="
         "stCallCreateCallCodeTest.call*:"
+        "stChainId.*:"
         // "stEIP2930.coinbaseT2:"
         // "stEIP2930.addressOpcodes:"
         "stEIP2930.transactionCosts:"
-        // "stMemoryTest.log1_dejavu:"
-        "stChainId.*:"
         "stExample.*:"
+        "stMemoryTest.*:"
+        // "stShift.*:"
         "-"
-        "stExample.solidityExample:"
         "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
         "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
+        "stExample.solidityExample:"
+        "stMemoryTest.buffer*:"
+        "stMemoryTest.memCopySelf:"
+        "stMemoryTest.oog:"
         /**/
         ;
 
