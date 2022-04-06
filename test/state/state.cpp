@@ -69,7 +69,13 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     if (result.status_code != EVMC_SUCCESS)
         state = state_snapshot;
 
-    const auto gas_used = tx.gas_limit - gas_left;
+    auto gas_used = tx.gas_limit - gas_left;
+
+    const auto max_refund_quotient = rev >= EVMC_LONDON ? 5 : 2;
+    const auto refund_limit = gas_used / max_refund_quotient;
+    const auto refund_raw = host.get_refund();
+    const auto refund = std::min(refund_raw, refund_limit);
+    gas_used -= refund;
 
     const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
 

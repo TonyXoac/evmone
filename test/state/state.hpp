@@ -55,12 +55,15 @@ class StateHost : public evmc::Host
     const BlockInfo& m_block;
     const Tx& m_tx;
     std::unordered_set<evmc::address> m_accessed_addresses;
+    int64_t m_refund = 0;
 
 public:
     explicit StateHost(evmc_revision rev, evmc::VM& vm, State& state, const BlockInfo& block,
         const Tx& tx) noexcept
       : m_rev{rev}, m_vm{vm}, m_state{state}, m_block{block}, m_tx{tx}
     {}
+
+    [[nodiscard]] int64_t get_refund() const noexcept { return m_refund; }
 
     bool account_exists(const address& addr) const noexcept override
     {
@@ -103,7 +106,10 @@ public:
             else if (value)
                 status = EVMC_STORAGE_MODIFIED;
             else
+            {
                 status = EVMC_STORAGE_DELETED;
+                m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
+            }
         }
         else
             status = EVMC_STORAGE_MODIFIED_AGAIN;
