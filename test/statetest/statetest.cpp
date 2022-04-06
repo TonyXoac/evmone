@@ -179,8 +179,7 @@ public:
 
 int main(int argc, char* argv[])
 {
-    constexpr auto builtin_filter =
-        "--gtest_filter="
+    constexpr auto known_passing_tests =
         "stCallCreateCallCodeTest.call*:"
         "stChainId.*:"
         // "stEIP2930.coinbaseT2:"
@@ -209,10 +208,16 @@ int main(int argc, char* argv[])
         /**/
         ;
 
+    constexpr auto single_test = ""sv;
+
+    std::string filter = "--gtest_filter=";
     const auto argv_end = argv + argc;
     if (const auto filter_arg = std::find(argv, argv_end, "--gtest_filter=builtin"sv);
         filter_arg != argv_end)
-        *filter_arg = const_cast<char*>(builtin_filter);
+    {
+        filter += (single_test.empty() ? known_passing_tests : single_test.data());
+        *filter_arg = filter.data();
+    }
 
     testing::InitGoogleTest(&argc, argv);
 
