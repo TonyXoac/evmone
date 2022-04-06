@@ -5,6 +5,7 @@
 #pragma once
 
 #include "account.hpp"
+#include "rlp.hpp"
 #include "utils.hpp"
 #include <iostream>
 #include <unordered_set>
@@ -189,23 +190,63 @@ public:
             m_refund += 24000;
     }
 
+    evmc::result create(const evmc_message& msg) noexcept
+    {
+        assert(msg.kind != EVMC_CREATE2);
+
+        // Compute new address.
+        const auto& sender_acc = m_state.accounts[msg.sender];
+        const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
+        const auto rlp_list = rlp::list(sender_address_bytes, sender_acc.nonce);
+        const auto hash = keccak256(rlp_list);
+        evmc_address new_addr{};
+        std::memcpy(new_addr.bytes, &hash.bytes[12], sizeof(new_addr));
+
+        m_state.accounts[msg.sender].nonce += 1;
+
+        // FIXME: Depends on revision.
+        m_state.accounts[new_addr].nonce = 1;
+
+        const auto value = intx::be::load<intx::uint256>(msg.value);
+        assert(m_state.accounts[msg.sender].balance >= value && "EVM must guarantee balance");
+        m_state.accounts[new_addr].balance = value;
+        m_state.accounts[msg.sender].balance -= value;
+
+        evmc_message create_msg{};
+        create_msg.kind = msg.kind;
+        create_msg.depth = msg.depth;
+        create_msg.gas = msg.gas;
+        create_msg.recipient = new_addr;
+        create_msg.sender = msg.sender;
+        create_msg.value = msg.value;
+
+        // Execution can modify the state, iterators are invalidated.
+        auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
+
+        auto gas_left = result.gas_left;
+
+        bytes_view code{result.output_data, result.output_size};
+        const auto cost = int64_t{200} * static_cast<int64_t>(code.size());
+        gas_left -= cost;
+        if (gas_left < 0)
+            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+
+        m_state.accounts[new_addr].code = code;
+
+        evmc::result create_result{result.status_code, gas_left, nullptr, 0};
+        create_result.create_address = new_addr;
+        return create_result;
+    }
+
     evmc::result call(const evmc_message& msg) noexcept override
     {
         // std::cout << "CALL " << msg.kind << "\n"
         //           << "  gas: " << msg.gas << "\n"
-        //           << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) << "\n";
+        //           << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) <<
+        //           "\n";
 
-        assert(msg.kind != EVMC_CREATE2);
-        if (msg.kind == EVMC_CREATE)
-        {
-            auto create_msg = msg;
-            create_msg.input_data = nullptr;
-            create_msg.input_size = 0;
-            auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
-            // std::cout << "- RESULT " << result.status_code << "\n"
-            //           << "  gas: " << result.gas_left << "\n";
-            return result;
-        }
+        if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
+            return create(msg);
 
         auto state_snapshot = m_state;
         const auto refund_snapshot = m_refund;

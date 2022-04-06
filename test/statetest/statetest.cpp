@@ -191,7 +191,10 @@ public:
 int main(int argc, char* argv[])
 {
     constexpr auto known_passing_tests =
+        "stArgsZeroOneBalance.*:"
+        // "stCallCodes.*:"
         "stCallCreateCallCodeTest.call*:"
+        // "stCreateTest.*:"
         "stChainId.*:"
         // "stEIP2930.coinbaseT2:"
         // "stEIP2930.addressOpcodes:"
@@ -206,6 +209,7 @@ int main(int argc, char* argv[])
         // "stStaticCall.static_call*:"
         "VMTests/*.*:"
         "-"
+        "stArgsZeroOneBalance.*NonConst:"
         "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
         "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
         "stExample.solidityExample:"
