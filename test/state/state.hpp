@@ -88,6 +88,8 @@ public:
     evmc_storage_status set_storage(
         const address& addr, const bytes32& key, const bytes32& value) noexcept override
     {
+        // std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (";
+
         // Get the reference to the old value.
         // This will create the account in case it was not present.
         // This is convenient for unit testing and standalone EVM execution to preserve the
@@ -98,7 +100,10 @@ public:
         // WARNING! This is not complete implementation as refund is not handled here.
 
         if (old.value == value)
+        {
+            // std::cout << EVMC_STORAGE_UNCHANGED << ")\n";
             return EVMC_STORAGE_UNCHANGED;
+        }
 
         evmc_storage_status status{};
         if (!old.dirty)
@@ -118,6 +123,7 @@ public:
             status = EVMC_STORAGE_MODIFIED_AGAIN;
 
         old.value = value;
+        // std::cout << status << ")\n";
         return status;
     }
 
@@ -185,9 +191,9 @@ public:
 
     evmc::result call(const evmc_message& msg) noexcept override
     {
-        std::cout << "CALL " << msg.kind << "\n"
-                  << "  gas: " << msg.gas << "\n"
-                  << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) << "\n";
+        // std::cout << "CALL " << msg.kind << "\n"
+        //           << "  gas: " << msg.gas << "\n"
+        //           << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) << "\n";
 
         assert(msg.kind != EVMC_CREATE2);
         if (msg.kind == EVMC_CREATE)
@@ -196,8 +202,8 @@ public:
             create_msg.input_data = nullptr;
             create_msg.input_size = 0;
             auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
-            std::cout << "- RESULT " << result.status_code << "\n"
-                      << "  gas: " << result.gas_left << "\n";
+            // std::cout << "- RESULT " << result.status_code << "\n"
+            //           << "  gas: " << result.gas_left << "\n";
             return result;
         }
 
@@ -207,8 +213,8 @@ public:
 
         const auto& code = m_state.accounts[msg.code_address].code;
         auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
-        std::cout << "- RESULT " << result.status_code << "\n"
-                  << "  gas: " << result.gas_left << "\n";
+        // std::cout << "- RESULT " << result.status_code << "\n"
+        //           << "  gas: " << result.gas_left << "\n";
         if (result.status_code != EVMC_SUCCESS)
         {
             // Revert.

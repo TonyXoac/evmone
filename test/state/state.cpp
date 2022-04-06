@@ -61,6 +61,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     bytes_view code = state.accounts[tx.to].code;
     const auto value_be = intx::be::store<evmc::uint256be>(tx.value);
 
+    assert(tx.to != evmc::address{});
     evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
         tx.data.size(), value_be, {}, tx.to};
     const auto result = vm.execute(host, rev, msg, code.data(), code.size());

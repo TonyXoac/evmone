@@ -19,7 +19,11 @@ T from_json(const json::json& j) = delete;
 template <>
 address from_json<address>(const json::json& j)
 {
-    return evmc::literals::internal::from_hex<address>(j.get<std::string>().c_str() + 2);
+    const auto s = j.get<std::string>();
+    if (s.empty())
+        return {};
+    assert(s.size() == 42);
+    return evmc::literals::internal::from_hex<address>(s.c_str() + 2);
 }
 
 template <>
@@ -199,6 +203,7 @@ int main(int argc, char* argv[])
         "stSLoadTest.*:"
         // "stSStoreTest.*:"
         // "stStackTests.*:"
+        // "stStaticCall.static_call*:"
         "VMTests/*.*:"
         "-"
         "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
