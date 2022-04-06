@@ -197,12 +197,14 @@ public:
         // Compute new address.
         const auto& sender_acc = m_state.accounts[msg.sender];
         const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
-        const auto rlp_list = rlp::list(sender_address_bytes, sender_acc.nonce);
+        const auto sender_nonce = msg.depth == 0 ? sender_acc.nonce - 1 : sender_acc.nonce;
+        const auto rlp_list = rlp::list(sender_address_bytes, sender_nonce);
         const auto hash = keccak256(rlp_list);
         evmc_address new_addr{};
         std::memcpy(new_addr.bytes, &hash.bytes[12], sizeof(new_addr));
 
-        m_state.accounts[msg.sender].nonce += 1;
+        if (msg.depth != 0)
+            m_state.accounts[msg.sender].nonce += 1;
 
         // FIXME: Depends on revision.
         m_state.accounts[new_addr].nonce = 1;

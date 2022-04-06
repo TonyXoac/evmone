@@ -35,8 +35,11 @@ int64_t compute_access_list_cost(const AccessList& access_list) noexcept
 int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
 {
     static constexpr auto call_tx_cost = 21000;
-    return call_tx_cost + compute_tx_data_cost(rev, tx.data) +
-           compute_access_list_cost(tx.access_list);
+    static constexpr auto create_tx_cost = 53000;
+    const bool is_create = tx.to == address{};
+    assert(rev >= EVMC_HOMESTEAD || !is_create);
+    const auto tx_cost = is_create ? create_tx_cost : call_tx_cost;
+    return tx_cost + compute_tx_data_cost(rev, tx.data) + compute_access_list_cost(tx.access_list);
 }
 }  // namespace
 
@@ -61,10 +64,20 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     bytes_view code = state.accounts[tx.to].code;
     const auto value_be = intx::be::store<evmc::uint256be>(tx.value);
 
-    assert(tx.to != evmc::address{});
-    evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
-        tx.data.size(), value_be, {}, tx.to};
-    const auto result = vm.execute(host, rev, msg, code.data(), code.size());
+    evmc::result result{EVMC_INTERNAL_ERROR, 0, nullptr, 0};
+    if (tx.to == evmc::address{})  // CREATE
+    {
+        evmc_message msg{EVMC_CREATE, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
+            tx.data.size(), value_be, {}, tx.to};
+        result = host.create(msg);
+    }
+    else
+    {
+        evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
+            tx.data.size(), value_be, {}, tx.to};
+        result = vm.execute(host, rev, msg, code.data(), code.size());
+    }
+
     const auto gas_left = result.gas_left;
 
     if (result.status_code != EVMC_SUCCESS)
