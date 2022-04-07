@@ -127,11 +127,19 @@ static void run_state_test(const json::json& j)
 
     for (const auto& [rev_name, posts] : _t["post"].items())
     {
+        // if (rev_name != "London")
+        //     continue;
+
         SCOPED_TRACE(rev_name);
         const auto rev = from_string(rev_name);
         int i = 0;
         for (const auto& [_, post] : posts.items())
         {
+            // if (i != 5)
+            // {
+            //     ++i;
+            //     continue;
+            // }
             const auto expected_state_hash = from_json<hash256>(post["hash"]);
             const auto& indexes = post["indexes"];
             const auto data_index = indexes["data"].get<size_t>();
@@ -215,8 +223,8 @@ int main(int argc, char* argv[])
         "stRefundTest.*:"
         "stShift.*:"
         "stSLoadTest.*:"
-        // "stSStoreTest.*:"
-        // "stStackTests.*:"
+        "stSStoreTest.sstore_*:"
+        "stStackTests.*:"
         // "stStaticCall.static_call*:"
         "VMTests/*.*:"
         "-"
@@ -256,6 +264,7 @@ int main(int argc, char* argv[])
         /**/
         ;
 
+    // constexpr auto single_test = "stSStoreTest.sstore_*:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";

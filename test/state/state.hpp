@@ -89,15 +89,13 @@ public:
     evmc_storage_status set_storage(
         const address& addr, const bytes32& key, const bytes32& value) noexcept override
     {
-        const auto old_refund = m_refund;
+        [[maybe_unused]] const auto old_refund = m_refund;
 
         // FIXME: assert(m_rev >= EVMC_ISTANBUL);
         // const int64_t sload_gas = 800;
         // const int64_t sstore_set_gas = 20000;
         // const int64_t sstore_reset_gas = 5000;
         // const int64_t sstore_clears_schedule = 15000;
-
-        std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (";
 
         auto& storage = m_state.accounts[addr].storage;
 
@@ -141,23 +139,24 @@ public:
                 if (!is_zero(old.orig))
                 {
                     if (is_zero(old.current))
-                        m_refund -= 15000;
+                        m_refund -= (m_rev >= EVMC_LONDON) ? 4800 : 15000;
                     if (is_zero(value))
-                        m_refund += 15000;
+                        m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
                 }
                 if (old.orig == value)
                 {
                     if (is_zero(old.orig))
-                        m_refund += 19200;
+                        m_refund += (m_rev >= EVMC_BERLIN) ? 19900 : 19200;
                     else
-                        m_refund += 4200;
+                        m_refund += (m_rev >= EVMC_BERLIN) ? 2800 : 4200;
                 }
                 old.current = value;
             }
         }
 
-        const auto sstore_refund = m_refund - old_refund;
-        std::cout << status << ", " << sstore_refund << ")\n";
+        [[maybe_unused]] const auto sstore_refund = m_refund - old_refund;
+        // std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (" << status << ", "
+        //           << old_refund << " + " << sstore_refund << " = " << m_refund << ")\n";
         return status;
     }
 
