@@ -91,39 +91,33 @@ public:
     {
         // std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (";
 
-        // Get the reference to the old value.
-        // This will create the account in case it was not present.
-        // This is convenient for unit testing and standalone EVM execution to preserve the
-        // storage values after the execution terminates.
-        auto& old = m_state.accounts[addr].storage[key];
+        auto& storage = m_state.accounts[addr].storage;
 
         // Follow https://eips.ethereum.org/EIPS/eip-1283 specification.
-        // WARNING! This is not complete implementation as refund is not handled here.
 
-        if (old.value == value)
-        {
-            // std::cout << EVMC_STORAGE_UNCHANGED << ")\n";
-            return EVMC_STORAGE_UNCHANGED;
-        }
+        auto& old = storage[key];
 
-        evmc_storage_status status{};
-        if (!old.dirty)
+        auto status = EVMC_STORAGE_UNCHANGED;
+        if (old.value != value)
         {
-            old.dirty = true;
-            if (!old.value)
-                status = EVMC_STORAGE_ADDED;
-            else if (value)
-                status = EVMC_STORAGE_MODIFIED;
-            else
+            if (!old.dirty)
             {
-                status = EVMC_STORAGE_DELETED;
-                m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
+                old.dirty = true;
+                if (!old.value)
+                    status = EVMC_STORAGE_ADDED;
+                else if (value)
+                    status = EVMC_STORAGE_MODIFIED;
+                else
+                {
+                    status = EVMC_STORAGE_DELETED;
+                    m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
+                }
             }
+            else
+                status = EVMC_STORAGE_MODIFIED_AGAIN;
+            old.value = value;
         }
-        else
-            status = EVMC_STORAGE_MODIFIED_AGAIN;
 
-        old.value = value;
         // std::cout << status << ")\n";
         return status;
     }

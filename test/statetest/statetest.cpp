@@ -160,8 +160,12 @@ static void run_state_test(const json::json& j)
                 state_dump << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << " [" << acc.nonce
                            << "]: " << to_string(acc.balance) << "\n";
                 for (const auto& [k, v] : acc.storage)
+                {
+                    if (is_zero(v.value))
+                        continue;
                     state_dump << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
                                << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
+                }
             }
 
             EXPECT_EQ(state::trie_hash(state), expected_state_hash) << state_dump.str();
