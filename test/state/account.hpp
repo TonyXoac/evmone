@@ -10,6 +10,13 @@
 
 namespace evmone::state
 {
+struct StorageValue
+{
+    evmc::bytes32 current{};
+    evmc::bytes32 orig{};
+    evmc_access_status access_status{EVMC_ACCESS_COLD};
+};
+
 struct Account
 {
     /// The account nonce.
@@ -25,7 +32,7 @@ struct Account
     intx::uint256 balance;
 
     /// The account storage map.
-    std::unordered_map<evmc::bytes32, evmc::storage_value> storage;
+    std::unordered_map<evmc::bytes32, StorageValue> storage;
 };
 
 using namespace evmc::literals;

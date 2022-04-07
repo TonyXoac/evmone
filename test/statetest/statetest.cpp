@@ -83,8 +83,13 @@ static void run_state_test(const json::json& j)
         acc.nonce = from_json<int>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
 
-        for (const auto& [key, value] : j_acc["storage"].items())
-            acc.storage[from_json<bytes32>(key)] = from_json<bytes32>(value);
+        for (const auto& [j_key, j_value] : j_acc["storage"].items())
+        {
+            auto& slot = acc.storage[from_json<bytes32>(j_key)];
+            const auto value = from_json<bytes32>(j_value);
+            slot.orig = value;
+            slot.current = value;
+        }
     }
 
     state::Tx tx;
@@ -161,10 +166,10 @@ static void run_state_test(const json::json& j)
                            << "]: " << to_string(acc.balance) << "\n";
                 for (const auto& [k, v] : acc.storage)
                 {
-                    if (is_zero(v.value))
+                    if (is_zero(v.current))
                         continue;
                     state_dump << "- " << evmc::hex({k.bytes, sizeof(k)}) << ": "
-                               << evmc::hex({v.value.bytes, sizeof(v.value)}) << "\n";
+                               << evmc::hex({v.current.bytes, sizeof(v.current)}) << "\n";
                 }
             }
 

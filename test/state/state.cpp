@@ -143,18 +143,18 @@ hash256 trie_hash(const State& state)
     return trie.hash();
 }
 
-hash256 trie_hash(const std::unordered_map<evmc::bytes32, evmc::storage_value>& storage)
+hash256 trie_hash(const std::unordered_map<evmc::bytes32, StorageValue>& storage)
 {
     Trie trie;
     for (const auto& [key, value] : storage)
     {
         // Skip zero values which mean "delete".
         // TODO: This probably should be handled in Host.
-        if (is_zero(value.value))
+        if (is_zero(value.current))
             continue;
 
         const auto xkey = keccak256(key);
-        const auto xvalue = rlp::string(rlp::trim(value.value));
+        const auto xvalue = rlp::string(rlp::trim(value.current));
         trie.insert(xkey, xvalue);
     }
     return trie.hash();

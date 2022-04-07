@@ -82,43 +82,82 @@ public:
 
         const auto storage_iter = account_iter->second.storage.find(key);
         if (storage_iter != account_iter->second.storage.end())
-            return storage_iter->second.value;
+            return storage_iter->second.current;
         return {};
     }
 
     evmc_storage_status set_storage(
         const address& addr, const bytes32& key, const bytes32& value) noexcept override
     {
-        // std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (";
+        const auto old_refund = m_refund;
+
+        // FIXME: assert(m_rev >= EVMC_ISTANBUL);
+        // const int64_t sload_gas = 800;
+        // const int64_t sstore_set_gas = 20000;
+        // const int64_t sstore_reset_gas = 5000;
+        // const int64_t sstore_clears_schedule = 15000;
+
+        std::cout << "SSTORE [" << hex(key) << "] = " << hex(value) << " (";
 
         auto& storage = m_state.accounts[addr].storage;
 
-        // Follow https://eips.ethereum.org/EIPS/eip-1283 specification.
+        // Follow https://eips.ethereum.org/EIPS/eip-2200 specification.
 
         auto& old = storage[key];
 
         auto status = EVMC_STORAGE_UNCHANGED;
-        if (old.value != value)
+
+        if (old.current == value)
         {
-            if (!old.dirty)
+            status = EVMC_STORAGE_UNCHANGED;
+        }
+        else
+        {
+            if (old.orig == old.current)
             {
-                old.dirty = true;
-                if (!old.value)
+                if (is_zero(old.orig))
+                {
                     status = EVMC_STORAGE_ADDED;
-                else if (value)
-                    status = EVMC_STORAGE_MODIFIED;
+                    old.current = value;
+                }
                 else
                 {
-                    status = EVMC_STORAGE_DELETED;
-                    m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
+                    if (!is_zero(value))
+                    {
+                        status = EVMC_STORAGE_MODIFIED;
+                        old.current = value;
+                    }
+                    else
+                    {
+                        status = EVMC_STORAGE_DELETED;
+                        old.current = value;
+                        m_refund += (m_rev >= EVMC_LONDON) ? 4800 : 15000;
+                    }
                 }
             }
-            else
+            else  // dirty
+            {
                 status = EVMC_STORAGE_MODIFIED_AGAIN;
-            old.value = value;
+                if (!is_zero(old.orig))
+                {
+                    if (is_zero(old.current))
+                        m_refund -= 15000;
+                    if (is_zero(value))
+                        m_refund += 15000;
+                }
+                if (old.orig == value)
+                {
+                    if (is_zero(old.orig))
+                        m_refund += 19200;
+                    else
+                        m_refund += 4200;
+                }
+                old.current = value;
+            }
         }
 
-        // std::cout << status << ")\n";
+        const auto sstore_refund = m_refund - old_refund;
+        std::cout << status << ", " << sstore_refund << ")\n";
         return status;
     }
 
@@ -358,5 +397,5 @@ public:
 
 hash256 trie_hash(const State& state);
 
-hash256 trie_hash(const std::unordered_map<evmc::bytes32, evmc::storage_value>& storage);
+hash256 trie_hash(const std::unordered_map<evmc::bytes32, StorageValue>& storage);
 }  // namespace evmone::state
