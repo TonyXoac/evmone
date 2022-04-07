@@ -275,6 +275,8 @@ public:
 
         // Execution can modify the state, iterators are invalidated.
         auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
+        if (result.status_code != EVMC_SUCCESS)
+            return result;
 
         auto gas_left = result.gas_left;
 
