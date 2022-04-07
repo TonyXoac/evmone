@@ -56,9 +56,6 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     const auto state_snapshot = state;
 
-    state.accounts[tx.sender].balance -= tx.value;
-    state.accounts[tx.to].balance += tx.value;
-
     StateHost host{rev, vm, state, block, tx};
 
     bytes_view code = state.accounts[tx.to].code;
@@ -73,6 +70,9 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     }
     else
     {
+        assert(state.accounts[tx.sender].balance >= tx.value);
+        state.accounts[tx.sender].balance -= tx.value;
+        state.accounts[tx.to].balance += tx.value;
         evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
             tx.data.size(), value_be, {}, tx.to};
         result = vm.execute(host, rev, msg, code.data(), code.size());

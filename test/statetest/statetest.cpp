@@ -234,8 +234,6 @@ int main(int argc, char* argv[])
         "stCreateTest.CREATE_ContractSuicideDuringInit_WithValueToItself:"
         "stCreateTest.CREATE_HighNonce:"
         "stCreateTest.TransactionCollisionToEmptyButNonce:"
-        "stCreateTest.CREATE_ContractSuicideDuringInit_ThenStoreThenReturn:"
-        "stCreateTest.CREATE_ContractSuicideDuringInit_WithValue:"
         "stCreateTest.CREATE_FirstByte_loop:"
         "stCreateTest.CreateOOGafterMaxCodesize:"
         "stCreateTest.TransactionCollisionToEmptyButCode:"
