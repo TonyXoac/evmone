@@ -192,16 +192,34 @@ public:
 
     evmc::result create(const evmc_message& msg) noexcept
     {
-        assert(msg.kind != EVMC_CREATE2);
+        assert(msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2);
 
         // Compute new address.
-        const auto& sender_acc = m_state.accounts[msg.sender];
-        const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
-        const auto sender_nonce = msg.depth == 0 ? sender_acc.nonce - 1 : sender_acc.nonce;
-        const auto rlp_list = rlp::list(sender_address_bytes, sender_nonce);
-        const auto hash = keccak256(rlp_list);
+        hash256 addr_base_hash;
+        if (msg.kind == EVMC_CREATE)
+        {
+            const auto& sender_acc = m_state.accounts[msg.sender];
+            const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
+            const auto sender_nonce = msg.depth == 0 ? sender_acc.nonce - 1 : sender_acc.nonce;
+            const auto rlp_list = rlp::list(sender_address_bytes, sender_nonce);
+            addr_base_hash = keccak256(rlp_list);
+        }
+        else
+        {
+            const auto init_code_hash = keccak256({msg.input_data, msg.input_size});
+            uint8_t
+                buffer[1 + sizeof(msg.sender) + sizeof(msg.create2_salt) + sizeof(init_code_hash)];
+            static_assert(std::size(buffer) == 85);
+            buffer[0] = 0xff;
+            std::memcpy(&buffer[1], msg.sender.bytes, sizeof(msg.sender));
+            std::memcpy(
+                &buffer[1 + sizeof(msg.sender)], msg.create2_salt.bytes, sizeof(msg.create2_salt));
+            std::memcpy(&buffer[1 + sizeof(msg.sender) + sizeof(msg.create2_salt)],
+                init_code_hash.bytes, sizeof(init_code_hash));
+            addr_base_hash = keccak256({buffer, std::size(buffer)});
+        }
         evmc_address new_addr{};
-        std::memcpy(new_addr.bytes, &hash.bytes[12], sizeof(new_addr));
+        std::memcpy(new_addr.bytes, &addr_base_hash.bytes[12], sizeof(new_addr));
 
         if (msg.depth != 0)
             m_state.accounts[msg.sender].nonce += 1;
@@ -310,7 +328,8 @@ public:
         // Transaction {sender,to} are always warm.
         if (addr == m_tx.to)
             return EVMC_ACCESS_WARM;
-        assert(addr != m_tx.sender);
+        if (addr == m_tx.sender)
+            return EVMC_ACCESS_WARM;
 
         // Accessing precompiled contracts is always warm.
         if (addr >= 0x0000000000000000000000000000000000000001_address &&

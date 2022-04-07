@@ -108,9 +108,11 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     state.accounts[block.coinbase].balance += producer_pay;
 
     // Apply destructs.
-    assert(host.get_destructs().empty() || result.status_code == EVMC_SUCCESS);
-    for (const auto& addr : host.get_destructs())
-        state.accounts.erase(addr);
+    if (result.status_code == EVMC_SUCCESS)
+    {
+        for (const auto& addr : host.get_destructs())
+            state.accounts.erase(addr);
+    }
 
     // Pretend all accounts are touched and erase empty ones.
     for (auto it = state.accounts.begin(); it != state.accounts.end();)
