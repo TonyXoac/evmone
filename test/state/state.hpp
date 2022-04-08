@@ -280,6 +280,10 @@ public:
         auto gas_left = result.gas_left;
 
         bytes_view code{result.output_data, result.output_size};
+        assert(m_rev >= EVMC_SPURIOUS_DRAGON || code.size() <= 0x6000);
+        if (code.size() > 0x6000)
+            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+
         const auto cost = int64_t{200} * static_cast<int64_t>(code.size());
         gas_left -= cost;
         if (gas_left < 0)
