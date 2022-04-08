@@ -255,6 +255,8 @@ public:
         evmc_address new_addr{};
         std::memcpy(new_addr.bytes, &addr_base_hash.bytes[12], sizeof(new_addr));
 
+        m_accessed_addresses.insert(new_addr);
+
         if (msg.depth != 0)
             m_state.accounts[msg.sender].nonce += 1;
 
@@ -406,6 +408,7 @@ public:
             return EVMC_ACCESS_WARM;
 
         m_accessed_addresses.insert(addr);
+        std::cout << "COLD " << hex({addr.bytes, sizeof(addr)}) << "\n";
         return EVMC_ACCESS_COLD;
     }
 
