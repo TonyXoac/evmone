@@ -299,9 +299,6 @@ public:
         //           << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) <<
         //           "\n";
 
-        if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
-            return create(msg);
-
         if (!evmc::is_zero(msg.recipient) &&
             msg.recipient <= 0x000000000000000000000000000000000000000a_address)
         {
@@ -312,16 +309,24 @@ public:
         const auto refund_snapshot = m_refund;
         auto destructs_snapshot = m_destructs;
 
-        const auto value = intx::be::load<intx::uint256>(msg.value);
-        if (msg.kind == EVMC_CALL)
+        evmc::result result{EVMC_INTERNAL_ERROR, 0, nullptr, 0};
+        if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
         {
-            // Transfer value.
-            assert(m_state.accounts[msg.sender].balance >= value);
-            m_state.accounts[msg.recipient].balance += value;
-            m_state.accounts[msg.sender].balance -= value;
+            result = create(msg);
         }
-        const auto& code = m_state.accounts[msg.code_address].code;
-        auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+        else
+        {
+            const auto value = intx::be::load<intx::uint256>(msg.value);
+            if (msg.kind == EVMC_CALL)
+            {
+                // Transfer value.
+                assert(m_state.accounts[msg.sender].balance >= value);
+                m_state.accounts[msg.recipient].balance += value;
+                m_state.accounts[msg.sender].balance -= value;
+            }
+            const auto& code = m_state.accounts[msg.code_address].code;
+            result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+        }
         // std::cout << "- RESULT " << result.status_code << "\n"
         //           << "  gas: " << result.gas_left << "\n";
         if (result.status_code != EVMC_SUCCESS)
@@ -330,6 +335,13 @@ public:
             m_state = std::move(state_snapshot);
             m_refund = refund_snapshot;
             m_destructs = std::move(destructs_snapshot);
+
+            // For CREATE the nonce bump is not reverted.
+            if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
+            {
+                if (msg.depth != 0)
+                    m_state.accounts[msg.sender].nonce += 1;
+            }
         }
         return result;
     }

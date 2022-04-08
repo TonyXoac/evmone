@@ -229,9 +229,7 @@ int main(int argc, char* argv[])
         "VMTests/*.*:"
         "-"
         "stArgsZeroOneBalance.*NonConst:"
-        "stCreateTest.CreateOOGafterInitCodeReturndataSize:"
         "stCreateTest.CREATE_HighNonceMinus1:"
-        "stCreateTest.CreateOOGafterInitCode:"
         "stCreateTest.CREATE_EmptyContractWithStorageAndCallIt_0wei:"
         "stCreateTest.CREATE_EmptyContractAndCallIt_1wei:"
         "stCreateTest.CREATE_EmptyContractAndCallIt_0wei:"
@@ -247,8 +245,6 @@ int main(int argc, char* argv[])
         "stCreateTest.CREATE_EOF1:"
         "stCreateTest.CREATE_AcreateB_BSuicide_BStore:"
         "stCreateTest.CREATE_ContractRETURNBigOffset:"
-        "stCreateTest.CreateOOGFromEOARefunds:"
-        "stCreateTest.CreateOOGFromCallRefunds:"
         "stCreateTest.createFailResult:"
         "stCreateTest.CreateCollisionResults:"
         "stCreateTest.createLargeResult:"
@@ -260,7 +256,7 @@ int main(int argc, char* argv[])
         /**/
         ;
 
-    // constexpr auto single_test = "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"sv;
+    // constexpr auto single_test = "stCreateTest.CreateOOGafterInitCode:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";
