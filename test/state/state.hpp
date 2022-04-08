@@ -182,6 +182,8 @@ public:
         const auto it = m_state.accounts.find(addr);
         if (it == m_state.accounts.end())
             return {};
+        if (it->second.is_empty())
+            return {};
         return keccak256(it->second.code);
     }
 
