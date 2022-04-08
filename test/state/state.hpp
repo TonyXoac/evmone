@@ -182,7 +182,7 @@ public:
         const auto it = m_state.accounts.find(addr);
         if (it == m_state.accounts.end())
             return {};
-        return it->second.codehash;
+        return keccak256(it->second.code);
     }
 
     size_t copy_code(const address& addr, size_t code_offset, uint8_t* buffer_data,

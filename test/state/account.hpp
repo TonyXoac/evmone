@@ -25,9 +25,6 @@ struct Account
     /// The account code.
     evmc::bytes code;
 
-    /// The code hash. Can be a value not related to the actual code.
-    evmc::bytes32 codehash;
-
     /// The account balance.
     intx::uint256 balance;
 
