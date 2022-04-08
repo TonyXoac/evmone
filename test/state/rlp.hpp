@@ -39,11 +39,10 @@ inline bytes string(const hash256& b)
     return string({b.bytes, sizeof(b)});
 }
 
-inline bytes string(int x)
+inline bytes string(uint64_t x)
 {
-    // TODO: Account::nonce should be uint64_t.
     uint8_t b[sizeof(x)];
-    const auto be = __builtin_bswap32(static_cast<unsigned>(x));
+    const auto be = __builtin_bswap64(x);
     __builtin_memcpy(b, &be, sizeof(be));
 
     size_t i = 0;

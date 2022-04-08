@@ -49,12 +49,6 @@ bytes from_json<bytes>(const json::json& j)
 }
 
 template <>
-int from_json<int>(const json::json& j)
-{
-    return std::stoi(j.get<std::string>(), nullptr, 16);
-}
-
-template <>
 int64_t from_json<int64_t>(const json::json& j)
 {
     return static_cast<int64_t>(std::stoll(j.get<std::string>(), nullptr, 16));
@@ -80,7 +74,7 @@ static void run_state_test(const json::json& j)
         const auto addr = from_json<address>(j_addr);
         auto& acc = pre_state.accounts[addr];
         acc.balance = from_json<intx::uint256>(j_acc["balance"]);
-        acc.nonce = from_json<int>(j_acc["nonce"]);
+        acc.nonce = from_json<uint64_t>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
 
         for (const auto& [j_key, j_value] : j_acc["storage"].items())
