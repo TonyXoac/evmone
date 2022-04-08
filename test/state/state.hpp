@@ -91,7 +91,7 @@ public:
     {
         [[maybe_unused]] const auto old_refund = m_refund;
 
-        // FIXME: assert(m_rev >= EVMC_ISTANBUL);
+        // /*FIXME:*/ assert(m_rev >= EVMC_ISTANBUL);
         // const int64_t sload_gas = 800;
         // const int64_t sstore_set_gas = 20000;
         // const int64_t sstore_reset_gas = 5000;
@@ -302,10 +302,24 @@ public:
         if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
             return create(msg);
 
+        if (!evmc::is_zero(msg.recipient) &&
+            msg.recipient <= 0x000000000000000000000000000000000000000a_address)
+        {
+            assert(false && "precompiles not implemented");
+        }
+
         auto state_snapshot = m_state;
         const auto refund_snapshot = m_refund;
         auto destructs_snapshot = m_destructs;
 
+        const auto value = intx::be::load<intx::uint256>(msg.value);
+        if (msg.kind == EVMC_CALL)
+        {
+            // Transfer value.
+            assert(m_state.accounts[msg.sender].balance >= value);
+            m_state.accounts[msg.recipient].balance += value;
+            m_state.accounts[msg.sender].balance -= value;
+        }
         const auto& code = m_state.accounts[msg.code_address].code;
         auto result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
         // std::cout << "- RESULT " << result.status_code << "\n"

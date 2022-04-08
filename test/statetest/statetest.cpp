@@ -229,8 +229,6 @@ int main(int argc, char* argv[])
         "VMTests/*.*:"
         "-"
         "stArgsZeroOneBalance.*NonConst:"
-        "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"
-        "stCallCreateCallCodeTest.callWithHighValueAndOOGatTxLevel:"
         "stCreateTest.CreateOOGafterInitCodeReturndataSize:"
         "stCreateTest.CREATE_HighNonceMinus1:"
         "stCreateTest.CreateOOGafterInitCode:"
@@ -258,13 +256,11 @@ int main(int argc, char* argv[])
         "stCreateTest.CreateResults:"
         "stExample.solidityExample:"
         "stMemoryTest.memCopySelf:"
-        "VMTests/vmIOandFlowOperations.loopsConditionals:"
         "VMTests/vmPerformance.*:"
-        "VMTests/vmTests.envInfo:"
         /**/
         ;
 
-    // constexpr auto single_test = "stSStoreTest.sstore_*:"sv;
+    // constexpr auto single_test = "stCallCreateCallCodeTest.callWithHighValueAndGasOOG:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";
