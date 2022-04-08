@@ -102,7 +102,10 @@ static void run_state_test(const json::json& j)
     tx.sender = from_json<evmc::address>(tr["sender"]);
     tx.to = from_json<evmc::address>(tr["to"]);
 
-    evmc::VM vm{evmc_create_evmone(), {{"O", "0"}}};
+    evmc::VM vm{evmc_create_evmone(), {
+                                          {"O", "0"},
+                                          // {"trace", "1"},
+                                      }};
 
     BlockInfo block;
     const auto& env = _t["env"];
