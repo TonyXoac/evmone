@@ -410,7 +410,7 @@ public:
             return EVMC_ACCESS_WARM;
 
         m_accessed_addresses.insert(addr);
-        std::cout << "COLD " << hex({addr.bytes, sizeof(addr)}) << "\n";
+        // std::cout << "COLD " << hex({addr.bytes, sizeof(addr)}) << "\n";
         return EVMC_ACCESS_COLD;
     }
 

@@ -206,12 +206,14 @@ int main(int argc, char* argv[])
 {
     constexpr auto known_passing_tests =
         "stArgsZeroOneBalance.*:"
-        // "stCallCodes.*:"
+        "stCallCodes.*:"
         "stCallCreateCallCodeTest.call*:"
         "stCreate2.CREATE2_Bounds*:"
         "stCreate2.call*:"
         "stCreateTest.*:"
         "stChainId.*:"
+        "stCodeSizeLimit.*:"
+        "stEIP1559.*"
         // "stEIP2930.coinbaseT2:"
         // "stEIP2930.addressOpcodes:"
         "stEIP2930.transactionCosts:"
@@ -222,7 +224,7 @@ int main(int argc, char* argv[])
         "stSLoadTest.*:"
         "stSStoreTest.sstore_*:"
         "stStackTests.*:"
-        // "stStaticCall.static_call*:"
+        "stStaticCall.*:"
         "VMTests/*.*:"
         "-"
         "stArgsZeroOneBalance.*NonConst:"
@@ -237,11 +239,18 @@ int main(int argc, char* argv[])
         "stCreateTest.createFailResult:"
         "stCreateTest.CreateCollisionResults:"
         "stMemoryTest.memCopySelf:"
+        "stStaticCall.static_call_OOG_additionalGasCosts2:"
         "VMTests/vmPerformance.*:"
+        // Disable precompiles.
+        "*.*Precompile*:"
+        "*.*Ecrecover*:*.*ecrec*:"
+        "*.*Ripemd160*:*.*rip160*:"
+        "*.*Sha256*:"
+        "*.*dentit*:"
         /**/
         ;
 
-    // constexpr auto single_test = "stCreateTest.CreateOOGafterInitCode:"sv;
+    // constexpr auto single_test = "stCodeSizeLimit.*:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";
