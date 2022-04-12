@@ -59,7 +59,6 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     StateHost host{rev, vm, state, block, tx};
 
-    bytes_view code = state.accounts[tx.to].code;
     const auto value_be = intx::be::store<evmc::uint256be>(tx.value);
 
     evmc::result result{EVMC_INTERNAL_ERROR, 0, nullptr, 0};
@@ -71,11 +70,13 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     }
     else
     {
+        // TODO: Using [] will unintentionally create accounts.
         assert(state.accounts[tx.sender].balance >= tx.value);
         state.accounts[tx.sender].balance -= tx.value;
         state.accounts[tx.to].balance += tx.value;
         evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
             tx.data.size(), value_be, {}, tx.to};
+        bytes_view code = state.accounts[tx.to].code;
         result = vm.execute(host, rev, msg, code.data(), code.size());
     }
 
@@ -108,6 +109,9 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     state.accounts[tx.sender].balance -= sender_fee;
     state.accounts[block.coinbase].balance += producer_pay;
 
+    // Touch COINBASE. TODO: Should be done after EIP-161.
+    state.accounts[block.coinbase].touched = true;
+
     // Apply destructs.
     if (result.status_code == EVMC_SUCCESS)
     {
@@ -115,11 +119,12 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
             state.accounts.erase(addr);
     }
 
-    // Pretend all accounts are touched and erase empty ones.
     for (auto it = state.accounts.begin(); it != state.accounts.end();)
     {
         const auto& acc = it->second;
-        if (acc.balance == 0 && acc.nonce == 0 && acc.code.empty())
+        if (acc.is_empty() && !acc.touched)
+            std::cout << "NOT TOUCHED: " << evmc::hex({it->first.bytes, sizeof(it->first)}) << "\n";
+        if (acc.touched && acc.is_empty())
             state.accounts.erase(it++);
         else
             ++it;

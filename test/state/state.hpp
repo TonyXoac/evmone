@@ -214,6 +214,9 @@ public:
 
         auto& acc = m_state.accounts[addr];
 
+        // Touch it. TODO: Should be done after EIP-161.
+        m_state.accounts[beneficiary].touched = true;
+
         // Immediately transfer all balance to beneficiary.
         if (addr != beneficiary)
             m_state.accounts[beneficiary].balance += acc.balance;
@@ -307,8 +310,8 @@ public:
     {
         // std::cout << "CALL " << msg.kind << "\n"
         //           << "  gas: " << msg.gas << "\n"
-        //           << "  code: " << hex({msg.code_address.bytes, sizeof(msg.code_address)}) <<
-        //           "\n";
+        //           << "  to: " << hex({msg.recipient.bytes, sizeof(address)}) << "\n"
+        //           << "  code: " << hex({msg.code_address.bytes, sizeof(address)}) << "\n";
 
         if (!evmc::is_zero(msg.recipient) &&
             msg.recipient <= 0x000000000000000000000000000000000000000a_address)
@@ -328,6 +331,9 @@ public:
         }
         else
         {
+            // Touch it. TODO: Should be done after EIP-161.
+            m_state.accounts[msg.code_address].touched = true;
+
             const auto value = intx::be::load<intx::uint256>(msg.value);
             if (msg.kind == EVMC_CALL)
             {

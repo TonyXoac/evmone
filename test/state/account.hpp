@@ -31,6 +31,9 @@ struct Account
     /// The account storage map.
     std::unordered_map<evmc::bytes32, StorageValue> storage;
 
+    /// Is the account "touched" as defined in EIP-161.
+    bool touched = false;
+
     [[nodiscard]] bool is_empty() const noexcept
     {
         return code.empty() && nonce == 0 && balance == 0;

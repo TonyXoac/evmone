@@ -234,12 +234,10 @@ int main(int argc, char* argv[])
         "stCreateTest.TransactionCollisionToEmptyButNonce:"
         "stCreateTest.CREATE_FirstByte_loop:"
         "stCreateTest.TransactionCollisionToEmptyButCode:"
-        "stCreateTest.TransactionCollisionToEmpty:"
         "stCreateTest.CREATE_EOF1:"
         "stCreateTest.createFailResult:"
         "stCreateTest.CreateCollisionResults:"
         "stMemoryTest.memCopySelf:"
-        "stStaticCall.static_call_OOG_additionalGasCosts2:"
         "VMTests/vmPerformance.*:"
         // Disable precompiles.
         "*.*Precompile*:"
