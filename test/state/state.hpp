@@ -266,6 +266,9 @@ public:
                 return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
         }
 
+        if (m_state.accounts.count(new_addr) > 0 && !m_state.accounts[new_addr].is_empty())
+            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+
         // FIXME: Depends on revision.
         m_state.accounts[new_addr].nonce = 1;
 
