@@ -35,6 +35,14 @@ struct Account
     {
         return code.empty() && nonce == 0 && balance == 0;
     }
+
+    [[nodiscard]] bool bump_nonce() noexcept
+    {
+        if (nonce == std::numeric_limits<decltype(nonce)>::max())
+            return false;
+        ++nonce;
+        return true;
+    }
 };
 
 using namespace evmc::literals;

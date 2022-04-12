@@ -258,7 +258,10 @@ public:
         m_accessed_addresses.insert(new_addr);
 
         if (msg.depth != 0)
-            m_state.accounts[msg.sender].nonce += 1;
+        {
+            if (!m_state.accounts[msg.sender].bump_nonce())
+                return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+        }
 
         // FIXME: Depends on revision.
         m_state.accounts[new_addr].nonce = 1;
@@ -350,7 +353,7 @@ public:
             if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
             {
                 if (msg.depth != 0)
-                    m_state.accounts[msg.sender].nonce += 1;
+                    (void)m_state.accounts[msg.sender].bump_nonce();
             }
         }
         return result;

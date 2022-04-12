@@ -52,7 +52,8 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     if (execution_gas_limit < 0)
         return false;
 
-    state.accounts[tx.sender].nonce += 1;
+    if (!state.accounts[tx.sender].bump_nonce())
+        return false;
 
     const auto state_snapshot = state;
 
