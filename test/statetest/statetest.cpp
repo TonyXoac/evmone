@@ -230,7 +230,7 @@ int main(int argc, char* argv[])
         "stEIP2930.transactionCosts:"
         // "stEIP3607.*:"
         "stExample.*:"
-        // "stExtCodeHash.*:"
+        "stExtCodeHash.*:"
         "stHomesteadSpecific.*:"
         "stInitCodeTest.*:"
         "stLogTests.*:"
@@ -289,6 +289,7 @@ int main(int argc, char* argv[])
         "stSolidityTest.TestCryptographicFunctions:"
         "stSpecialTest.failed_tx_xcf416c53:"
         "stSpecialTest.selfdestructEIP2929:"
+        "stExtCodeHash.codeCopyZero:"
         /**/
         ;
 

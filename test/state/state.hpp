@@ -71,7 +71,10 @@ public:
 
     bool account_exists(const address& addr) const noexcept override
     {
-        return m_state.accounts.count(addr) != 0;
+        const auto it = m_state.accounts.find(addr);
+        if (it == m_state.accounts.end())
+            return false;
+        return !it->second.is_empty();
     }
 
     bytes32 get_storage(const address& addr, const bytes32& key) const noexcept override
