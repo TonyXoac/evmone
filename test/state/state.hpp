@@ -278,7 +278,7 @@ public:
 
         const auto value = intx::be::load<intx::uint256>(msg.value);
         assert(m_state.accounts[msg.sender].balance >= value && "EVM must guarantee balance");
-        m_state.accounts[new_addr].balance = value;
+        m_state.accounts[new_addr].balance += value;  // The new account may be prefunded.
         m_state.accounts[msg.sender].balance -= value;
 
         evmc_message create_msg{};

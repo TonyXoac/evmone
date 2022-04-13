@@ -232,7 +232,7 @@ int main(int argc, char* argv[])
         "stExample.*:"
         // "stExtCodeHash.*:"
         "stHomesteadSpecific.*:"
-        // "stInitCodeTest.*:"
+        "stInitCodeTest.*:"
         "stLogTests.*:"
         "stMemExpandingEIP150Calls.*:"
         "stMemoryStressTest.*:"
@@ -246,7 +246,7 @@ int main(int argc, char* argv[])
         "stRecursiveCreate.*:"
         "stRefundTest.*:"
         "stReturnDataTest.*:"
-        // "stRevertTest.*:"
+        "stRevertTest.*:"
         "stSelfBalance.*:"
         "stShift.*:"
         "stSLoadTest.*:"
@@ -280,7 +280,7 @@ int main(int argc, char* argv[])
         "VMTests/vmPerformance.*:"                 // status unknown
         // Disable precompiles.
         "*.*Precompile*:*.*precompile*:"
-        "*.*Ecrecover*:*.*ecrec*:"
+        "*.*Ecrecover*:*.*ecrec*:*.*ECRecover*:"
         "*.*Ripemd160*:*.*rip160*:"
         "*.*Sha256*:*.*sha256*:"
         "*.*dentit*:"
