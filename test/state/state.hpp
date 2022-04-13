@@ -146,7 +146,9 @@ public:
                 if (old.orig == value)
                 {
                     if (is_zero(old.orig))
-                        m_refund += (m_rev >= EVMC_BERLIN) ? 19900 : 19200;
+                        m_refund += (m_rev >= EVMC_BERLIN)         ? 19900 :
+                                    (m_rev == EVMC_CONSTANTINOPLE) ? 19800 :
+                                                                     19200;
                     else
                         m_refund += (m_rev >= EVMC_BERLIN) ? 2800 : 4200;
                 }
