@@ -268,11 +268,13 @@ public:
                 return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
         }
 
-        if (m_state.accounts.count(new_addr) > 0 && !m_state.accounts[new_addr].is_empty())
+        // Check collision as defined in pseudo-EIP https://github.com/ethereum/EIPs/issues/684.
+        if (m_state.accounts.count(new_addr) > 0 &&
+            !(m_state.accounts[new_addr].nonce == 0 && m_state.accounts[new_addr].code.empty()))
             return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
 
-        // FIXME: Depends on revision.
-        m_state.accounts[new_addr].nonce = 1;
+        m_state.accounts[new_addr].nonce = 1;        // FIXME: Depends on revision.
+        m_state.accounts[new_addr].storage.clear();  // In case of collision.
 
         const auto value = intx::be::load<intx::uint256>(msg.value);
         assert(m_state.accounts[msg.sender].balance >= value && "EVM must guarantee balance");
