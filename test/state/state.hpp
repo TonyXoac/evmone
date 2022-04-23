@@ -15,6 +15,28 @@ namespace evmone::state
 class State
 {
 public:
+    Account& get(const evmc::address& addr)
+    {
+        assert(accounts.count(addr) == 1);
+        return accounts.find(addr)->second;
+    }
+
+    Account* get_or_null(const evmc::address& addr)
+    {
+        const auto it = accounts.find(addr);
+        if (it != accounts.end())
+            return &it->second;
+        return nullptr;
+    }
+
+    Account& get_or_create(const evmc::address& addr) { return accounts[addr]; }
+
+    void touch(const evmc::address& addr) { accounts[addr].touched = true; }
+
+    auto& get_accounts() { return accounts; }
+    auto& get_accounts() const { return accounts; }
+
+private:
     std::unordered_map<evmc::address, Account> accounts;
 };
 
@@ -71,20 +93,20 @@ public:
 
     bool account_exists(const address& addr) const noexcept override
     {
-        const auto it = m_state.accounts.find(addr);
-        if (it == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return false;
-        return !it->second.is_empty();
+        return !acc->is_empty();
     }
 
     bytes32 get_storage(const address& addr, const bytes32& key) const noexcept override
     {
-        const auto account_iter = m_state.accounts.find(addr);
-        if (account_iter == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return {};
 
-        const auto storage_iter = account_iter->second.storage.find(key);
-        if (storage_iter != account_iter->second.storage.end())
+        const auto storage_iter = acc->storage.find(key);
+        if (storage_iter != acc->storage.end())
             return storage_iter->second.current;
         return {};
     }
@@ -100,7 +122,7 @@ public:
         // const int64_t sstore_reset_gas = 5000;
         // const int64_t sstore_clears_schedule = 15000;
 
-        auto& storage = m_state.accounts[addr].storage;
+        auto& storage = m_state.get(addr).storage;
 
         // Follow https://eips.ethereum.org/EIPS/eip-2200 specification.
 
@@ -167,39 +189,39 @@ public:
 
     uint256be get_balance(const address& addr) const noexcept override
     {
-        const auto it = m_state.accounts.find(addr);
-        if (it == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return {};
 
-        return intx::be::store<uint256be>(it->second.balance);
+        return intx::be::store<uint256be>(acc->balance);
     }
 
     size_t get_code_size(const address& addr) const noexcept override
     {
-        const auto it = m_state.accounts.find(addr);
-        if (it == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return 0;
-        return it->second.code.size();
+        return acc->code.size();
     }
 
     bytes32 get_code_hash(const address& addr) const noexcept override
     {
-        const auto it = m_state.accounts.find(addr);
-        if (it == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return {};
-        if (it->second.is_empty())
+        if (acc->is_empty())
             return {};
-        return keccak256(it->second.code);
+        return keccak256(acc->code);
     }
 
     size_t copy_code(const address& addr, size_t code_offset, uint8_t* buffer_data,
         size_t buffer_size) const noexcept override
     {
-        const auto it = m_state.accounts.find(addr);
-        if (it == m_state.accounts.end())
+        const auto acc = m_state.get_or_null(addr);
+        if (acc == nullptr)
             return 0;
 
-        const auto& code = it->second.code;
+        const auto& code = acc->code;
 
         if (code_offset >= code.size())
             return 0;
@@ -217,14 +239,17 @@ public:
         if (std::count(std::begin(m_destructs), std::end(m_destructs), addr) != 0)
             return;
 
-        auto& acc = m_state.accounts[addr];
+        auto& acc = m_state.get(addr);
 
         // Touch it. TODO: Should be done after EIP-161.
-        m_state.accounts[beneficiary].touched = true;
+        m_state.touch(beneficiary);
 
         // Immediately transfer all balance to beneficiary.
-        if (addr != beneficiary)
-            m_state.accounts[beneficiary].balance += acc.balance;
+        if (addr != beneficiary && acc.balance)
+        {
+            auto& ben_acc = m_state.get_or_create(beneficiary);
+            ben_acc.balance += acc.balance;
+        }
         acc.balance = 0;
 
         m_destructs.push_back(addr);
@@ -240,7 +265,7 @@ public:
         hash256 addr_base_hash;
         if (msg.kind == EVMC_CREATE)
         {
-            const auto& sender_acc = m_state.accounts[msg.sender];
+            const auto& sender_acc = m_state.get(msg.sender);
             const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
             const auto sender_nonce = msg.depth == 0 ? sender_acc.nonce - 1 : sender_acc.nonce;
             const auto rlp_list = rlp::list(sender_address_bytes, sender_nonce);
@@ -267,22 +292,23 @@ public:
 
         if (msg.depth != 0)
         {
-            if (!m_state.accounts[msg.sender].bump_nonce())
+            if (!m_state.get(msg.sender).bump_nonce())
                 return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
         }
 
         // Check collision as defined in pseudo-EIP https://github.com/ethereum/EIPs/issues/684.
-        if (m_state.accounts.count(new_addr) > 0 &&
-            !(m_state.accounts[new_addr].nonce == 0 && m_state.accounts[new_addr].code.empty()))
+        if (const auto collision_acc = m_state.get_or_null(new_addr);
+            collision_acc != nullptr && !(collision_acc->nonce == 0 && collision_acc->code.empty()))
             return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
 
-        m_state.accounts[new_addr].nonce = 1;        // FIXME: Depends on revision.
-        m_state.accounts[new_addr].storage.clear();  // In case of collision.
+        auto& new_acc = m_state.get_or_create(new_addr);
+        new_acc.nonce = 1;        // FIXME: Depends on revision.
+        new_acc.storage.clear();  // In case of collision.
 
         const auto value = intx::be::load<intx::uint256>(msg.value);
-        assert(m_state.accounts[msg.sender].balance >= value && "EVM must guarantee balance");
-        m_state.accounts[new_addr].balance += value;  // The new account may be prefunded.
-        m_state.accounts[msg.sender].balance -= value;
+        assert(m_state.get(msg.sender).balance >= value && "EVM must guarantee balance");
+        new_acc.balance += value;  // The new account may be prefunded.
+        m_state.get(msg.sender).balance -= value;
 
         evmc_message create_msg{};
         create_msg.kind = msg.kind;
@@ -309,7 +335,8 @@ public:
         if (gas_left < 0)
             return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
 
-        m_state.accounts[new_addr].code = code;
+        // TODO: Somehow the new_acc pointer is invalid.
+        m_state.get(new_addr).code = code;
 
         evmc::result create_result{result.status_code, gas_left, nullptr, 0};
         create_result.create_address = new_addr;
@@ -341,18 +368,21 @@ public:
         }
         else
         {
+            auto* code_acc = m_state.get_or_null(msg.code_address);
             // Touch it. TODO: Should be done after EIP-161.
-            m_state.accounts[msg.code_address].touched = true;
+            // FIXME: Should not create empty?
+            m_state.touch(msg.code_address);
 
             const auto value = intx::be::load<intx::uint256>(msg.value);
             if (msg.kind == EVMC_CALL)
             {
                 // Transfer value.
-                assert(m_state.accounts[msg.sender].balance >= value);
-                m_state.accounts[msg.recipient].balance += value;
-                m_state.accounts[msg.sender].balance -= value;
+                assert(m_state.get(msg.sender).balance >= value);
+                // FIXME: Properly create account here.
+                m_state.get(msg.recipient).balance += value;
+                m_state.get(msg.sender).balance -= value;
             }
-            const auto& code = m_state.accounts[msg.code_address].code;
+            bytes_view code = code_acc != nullptr ? code_acc->code : bytes_view{};
             result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
         }
         // std::cout << "- RESULT " << result.status_code << "\n"
@@ -369,7 +399,7 @@ public:
             if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
             {
                 if (msg.depth != 0)
-                    (void)m_state.accounts[msg.sender].bump_nonce();
+                    (void)m_state.get(msg.sender).bump_nonce();
             }
         }
         return result;
@@ -442,7 +472,7 @@ public:
                 return EVMC_ACCESS_WARM;
         }
 
-        auto& value = m_state.accounts[addr].storage[key];
+        auto& value = m_state.get(addr).storage[key];
         const auto access_status = value.access_status;
         value.access_status = EVMC_ACCESS_WARM;
         return access_status;

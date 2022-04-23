@@ -72,7 +72,7 @@ static void run_state_test(const json::json& j)
     for (const auto& [j_addr, j_acc] : pre.items())
     {
         const auto addr = from_json<address>(j_addr);
-        auto& acc = pre_state.accounts[addr];
+        auto& acc = pre_state.get_or_create(addr);
         acc.balance = from_json<intx::uint256>(j_acc["balance"]);
         acc.nonce = from_json<uint64_t>(j_acc["nonce"]);
         acc.code = from_json<bytes>(j_acc["code"]);
@@ -165,7 +165,7 @@ static void run_state_test(const json::json& j)
             std::ostringstream state_dump;
 
             state_dump << "--- " << rev_name << " " << i << "\n";
-            for (const auto& [addr, acc] : state.accounts)
+            for (const auto& [addr, acc] : state.get_accounts())
             {
                 state_dump << evmc::hex({addr.bytes, sizeof(addr.bytes)}) << " [" << acc.nonce
                            << "]: " << to_string(acc.balance) << "\n";

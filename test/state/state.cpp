@@ -46,13 +46,13 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
 bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
 {
     assert(block.gas_limit >= tx.gas_limit);
-    assert(state.accounts[tx.sender].balance >=
-           tx.gas_limit * tx.max_gas_price);  // FIXME: Should be effective_gas_price
+    assert(state.get(tx.sender).balance >= tx.gas_limit * tx.max_gas_price);  // FIXME: Should be
+                                                                              // effective_gas_price
     const auto execution_gas_limit = tx.gas_limit - compute_tx_intrinsic_cost(rev, tx);
     if (execution_gas_limit < 0)
         return false;
 
-    if (!state.accounts[tx.sender].bump_nonce())
+    if (!state.get(tx.sender).bump_nonce())
         return false;
 
     const auto state_snapshot = state;
@@ -70,13 +70,13 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     }
     else
     {
-        // TODO: Using [] will unintentionally create accounts.
-        assert(state.accounts[tx.sender].balance >= tx.value);
-        state.accounts[tx.sender].balance -= tx.value;
-        state.accounts[tx.to].balance += tx.value;
+        assert(state.get(tx.sender).balance >= tx.value);
+        state.get(tx.sender).balance -= tx.value;
+        state.get_or_create(tx.to).balance += tx.value;
+        // TODO: Probably the tx.to should be touched here.
         evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
             tx.data.size(), value_be, {}, tx.to};
-        bytes_view code = state.accounts[tx.to].code;
+        bytes_view code = state.get(tx.to).code;
         result = vm.execute(host, rev, msg, code.data(), code.size());
     }
 
@@ -105,27 +105,29 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     const auto sender_fee = gas_used * effective_gas_price;
     const auto producer_pay = gas_used * priority_gas_price;
 
-    assert(state.accounts[tx.sender].balance >= sender_fee);
-    state.accounts[tx.sender].balance -= sender_fee;
-    state.accounts[block.coinbase].balance += producer_pay;
+    assert(state.get(tx.sender).balance >= sender_fee);
+    state.get(tx.sender).balance -= sender_fee;
+    state.get_or_create(block.coinbase).balance += producer_pay;
 
     // Touch COINBASE. TODO: Should be done after EIP-161.
-    state.accounts[block.coinbase].touched = true;
+    state.touch(block.coinbase);
+
+    auto& accounts = state.get_accounts();
 
     // Apply destructs.
     if (result.status_code == EVMC_SUCCESS)
     {
         for (const auto& addr : host.get_destructs())
-            state.accounts.erase(addr);
+            accounts.erase(addr);
     }
 
-    for (auto it = state.accounts.begin(); it != state.accounts.end();)
+    for (auto it = accounts.begin(); it != accounts.end();)
     {
         const auto& acc = it->second;
         if (acc.is_empty() && !acc.touched)
             std::cout << "NOT TOUCHED: " << evmc::hex({it->first.bytes, sizeof(it->first)}) << "\n";
         if (acc.touched && acc.is_empty())
-            state.accounts.erase(it++);
+            accounts.erase(it++);
         else
             ++it;
     }
@@ -135,7 +137,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 hash256 trie_hash(const State& state)
 {
     Trie trie;
-    for (const auto& [addr, acc] : state.accounts)
+    for (const auto& [addr, acc] : state.get_accounts())
     {
         const auto xkey = keccak256(addr);
 
