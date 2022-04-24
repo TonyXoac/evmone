@@ -239,9 +239,7 @@ int main(int argc, char* argv[])
         "stChainId.*:"
         "stCodeCopyTest.*:"
         "stCodeSizeLimit.*:"
-        //"stCreate2.*:"
-        "stCreate2.CREATE2_Bounds*:"
-        "stCreate2.call*:"
+        "stCreate2.*:"
         "stCreateTest.*:"
         "stDelegatecallTestHomestead.*:"
         "stEIP150singleCodeGasPrices.*:"
@@ -284,12 +282,10 @@ int main(int argc, char* argv[])
         "stTransitionTest.*:"
         "stWalletTest.*:"
         "stZeroCallsRevert.*:"
-        // "stZeroCallsTest.*:"
+        "stZeroCallsTest.*:"
         "VMTests/*.*:"
         "-"
-        "stArgsZeroOneBalance.*NonConst:"
-        "stCreateTest.CREATE_HighNonceMinus1:"
-        "stCreateTest.CREATE_HighNonce:"
+        "stArgsZeroOneBalance.*NonConst:"  // has precompiles
         "stCreateTest.CreateCollisionResults:"
         "stEIP150Specific.NewGasPriceForCodes:"
         "stMemoryTest.memCopySelf:"
@@ -313,7 +309,7 @@ int main(int argc, char* argv[])
         /**/
         ;
 
-    // constexpr auto single_test = "stCodeSizeLimit.*:"sv;
+    // constexpr auto single_test = "stCreateTest.CREATE_HighNonceMinus1:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";

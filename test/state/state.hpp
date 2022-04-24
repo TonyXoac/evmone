@@ -303,7 +303,8 @@ public:
             return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
 
         auto& new_acc = m_state.get_or_create(new_addr);
-        new_acc.nonce = 1;        // FIXME: Depends on revision.
+        if (m_rev >= EVMC_SPURIOUS_DRAGON)
+            new_acc.nonce = 1;
         new_acc.storage.clear();  // In case of collision.
 
         const auto value = intx::be::load<intx::uint256>(msg.value);
