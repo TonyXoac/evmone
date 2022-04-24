@@ -46,8 +46,12 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
 bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
 {
     assert(block.gas_limit >= tx.gas_limit);
-    assert(state.get(tx.sender).balance >= tx.gas_limit * tx.max_gas_price);  // FIXME: Should be
-                                                                              // effective_gas_price
+
+    // FIXME: The effective_gas_price should be used.
+    const auto tx_max_cost = intx::uint512{tx.gas_limit} * intx::uint512{tx.max_gas_price};
+    if (state.get(tx.sender).balance < tx_max_cost)
+        return false;
+
     const auto execution_gas_limit = tx.gas_limit - compute_tx_intrinsic_cost(rev, tx);
     if (execution_gas_limit < 0)
         return false;
