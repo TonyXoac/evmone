@@ -39,7 +39,18 @@ hash256 from_json<hash256>(const json::json& j)
 template <>
 intx::uint256 from_json<intx::uint256>(const json::json& j)
 {
-    return intx::from_string<intx::uint256>(j.get<std::string>().c_str());
+    const auto s = j.get<std::string>();
+    std::string_view v = s;
+    constexpr auto bigint_marker = "0x:bigint "sv;
+    if (v.substr(0, bigint_marker.size()) == bigint_marker)
+    {
+        const std::string a{v.substr(bigint_marker.size())};
+        const auto x = intx::from_string<intx::uint512>(a.c_str());
+        if (x > std::numeric_limits<intx::uint256>::max())
+            throw std::range_error("bigint too big");
+        return static_cast<intx::uint256>(x);
+    }
+    return intx::from_string<intx::uint256>(s.c_str());
 }
 
 template <>
@@ -142,7 +153,18 @@ static void run_state_test(const json::json& j)
             const auto data_index = indexes["data"].get<size_t>();
             tx.data = from_json<bytes>(tr["data"][data_index]);
             tx.gas_limit = from_json<int64_t>(tr["gasLimit"][indexes["gas"].get<size_t>()]);
-            tx.value = from_json<intx::uint256>(tr["value"][indexes["value"].get<size_t>()]);
+
+            const auto expect_tx_exception = post.contains("expectException");
+            try
+            {
+                tx.value = from_json<intx::uint256>(tr["value"][indexes["value"].get<size_t>()]);
+            }
+            catch (const std::range_error&)
+            {
+                if (expect_tx_exception && post["expectException"] == "TR_NoFunds")
+                    continue;
+                throw;
+            }
 
             tx.access_list.clear();
             if (access_lists_it != tr.end())
@@ -158,7 +180,6 @@ static void run_state_test(const json::json& j)
 
             auto state = pre_state;
 
-            const auto expect_tx_exception = post.contains("expectException");
             const auto tx_status = state::transition(state, block, tx, rev, vm);
             EXPECT_NE(tx_status, expect_tx_exception);
 
