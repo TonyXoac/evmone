@@ -336,6 +336,10 @@ public:
         if (gas_left < 0)
             return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
 
+        // Reject EF code.
+        if (m_rev >= EVMC_LONDON && !code.empty() && code[0] == 0xEF)
+            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+
         // TODO: Somehow the new_acc pointer is invalid.
         m_state.get(new_addr).code = code;
 
