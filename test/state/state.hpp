@@ -8,6 +8,7 @@
 #include "rlp.hpp"
 #include "utils.hpp"
 #include <iostream>
+#include <optional>
 #include <unordered_set>
 
 namespace evmone::state
@@ -61,7 +62,7 @@ struct Tx
     intx::uint256 max_priority_gas_price;
     uint64_t nonce;
     evmc::address sender;
-    evmc::address to;
+    std::optional<evmc::address> to;
     intx::uint256 value;
     AccessList access_list;
 };

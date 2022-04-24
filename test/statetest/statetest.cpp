@@ -111,7 +111,8 @@ static void run_state_test(const json::json& j)
     }
     tx.nonce = from_json<uint64_t>(tr["nonce"]);
     tx.sender = from_json<evmc::address>(tr["sender"]);
-    tx.to = from_json<evmc::address>(tr["to"]);
+    if (!tr["to"].get<std::string>().empty())
+        tx.to = from_json<evmc::address>(tr["to"]);
 
     evmc::VM vm{evmc_create_evmone(), {
                                           {"O", "0"},
