@@ -369,9 +369,13 @@ public:
         else
         {
             auto* code_acc = m_state.get_or_null(msg.code_address);
-            // Touch it. TODO: Should be done after EIP-161.
-            // FIXME: Should not create empty?
-            m_state.touch(msg.code_address);
+
+            if (msg.kind == EVMC_CALL)
+            {
+                // Touch it. TODO: Should be done after EIP-161.
+                // FIXME: Should not create empty?
+                m_state.touch(msg.code_address);
+            }
 
             const auto value = intx::be::load<intx::uint256>(msg.value);
             if (msg.kind == EVMC_CALL)

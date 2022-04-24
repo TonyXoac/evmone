@@ -132,7 +132,7 @@ static void run_state_test(const json::json& j)
         int i = 0;
         for (const auto& [_, post] : posts.items())
         {
-            // if (i != 5)
+            // if (i != 0)
             // {
             //     ++i;
             //     continue;
@@ -237,7 +237,7 @@ int main(int argc, char* argv[])
         "stMemExpandingEIP150Calls.*:"
         "stMemoryStressTest.*:"
         "stMemoryTest.*:"
-        // "stNonZeroCallsTest.*:"
+        "stNonZeroCallsTest.*:"
         // "stPreCompiledContracts.*:"
         // "stPreCompiledContracts2.*:"
         "stQuadraticComplexityTest.*:"
