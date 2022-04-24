@@ -294,7 +294,7 @@ public:
         if (msg.depth != 0)
         {
             if (!m_state.get(msg.sender).bump_nonce())
-                return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+                return {EVMC_OUT_OF_GAS, msg.gas, nullptr, 0};  // Gas is not consumed.
         }
 
         // Check collision as defined in pseudo-EIP https://github.com/ethereum/EIPs/issues/684.
