@@ -77,6 +77,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
         assert(state.get(tx.sender).balance >= tx.value);
         state.get(tx.sender).balance -= tx.value;
         state.get_or_create(tx.to).balance += tx.value;
+        state.touch(tx.to);
         // TODO: Probably the tx.to should be touched here.
         evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, tx.to, tx.sender, tx.data.data(),
             tx.data.size(), value_be, {}, tx.to};
