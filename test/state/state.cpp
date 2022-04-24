@@ -59,6 +59,8 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     if (!state.get(tx.sender).bump_nonce())
         return false;
 
+    state.get(tx.sender).balance -= static_cast<intx::uint256>(tx_max_cost);
+
     const auto state_snapshot = state;
 
     StateHost host{rev, vm, state, block, tx};
@@ -110,7 +112,7 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     const auto sender_fee = gas_used * effective_gas_price;
     const auto producer_pay = gas_used * priority_gas_price;
 
-    assert(state.get(tx.sender).balance >= sender_fee);
+    state.get(tx.sender).balance += static_cast<intx::uint256>(tx_max_cost);
     state.get(tx.sender).balance -= sender_fee;
     state.get_or_create(block.coinbase).balance += producer_pay;
 

@@ -287,10 +287,7 @@ int main(int argc, char* argv[])
         "-"
         "stArgsZeroOneBalance.*NonConst:"  // has precompiles
         "stCreateTest.CreateCollisionResults:"
-        "stEIP150Specific.NewGasPriceForCodes:"
         "stMemoryTest.memCopySelf:"
-        "stMemExpandingEIP150Calls.NewGasPriceForCodesWithMemExpandingCalls:"
-        "stSystemOperationsTest.callerAccountBalance:"
         // Slow tests.
         "stCreateTest.CreateOOGafterMaxCodesize:"  // pass
         "VMTests/vmPerformance.*:"                 // status unknown
