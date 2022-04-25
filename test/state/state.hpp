@@ -56,6 +56,13 @@ using AccessList = std::vector<std::pair<evmc::address, std::vector<evmc::bytes3
 
 struct Tx
 {
+    enum class Kind
+    {
+        legacy,
+        eip1559
+    };
+
+    Kind kind = Kind::legacy;
     bytes data;
     int64_t gas_limit;
     intx::uint256 max_gas_price;

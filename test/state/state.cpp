@@ -45,7 +45,19 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
 
 bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
 {
-    assert(block.gas_limit >= tx.gas_limit);
+    if (rev < EVMC_LONDON && tx.kind == Tx::Kind::eip1559)
+        return false;
+
+    if (tx.max_gas_price < tx.max_priority_gas_price)
+        return false;  // tip too high
+
+    if (block.gas_limit < tx.gas_limit)
+        return false;
+
+    const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
+
+    if (tx.max_gas_price < base_fee)
+        return false;
 
     // FIXME: The effective_gas_price should be used.
     const auto tx_max_cost = intx::uint512{tx.gas_limit} * intx::uint512{tx.max_gas_price};
@@ -56,10 +68,17 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     if (execution_gas_limit < 0)
         return false;
 
+    state.get(tx.sender).balance -= static_cast<intx::uint256>(tx_max_cost);
+
+    if (state.get(tx.sender).balance < tx.value)
+    {
+        state.get(tx.sender).balance += static_cast<intx::uint256>(tx_max_cost);
+        return false;  // FIXME: sender balance is wrong.
+    }
+
+    // Bump sender nonce. This must be the last transaction validity check.
     if (!state.get(tx.sender).bump_nonce())
         return false;
-
-    state.get(tx.sender).balance -= static_cast<intx::uint256>(tx_max_cost);
 
     const auto state_snapshot = state;
 
@@ -76,7 +95,6 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     }
     else
     {
-        assert(state.get(tx.sender).balance >= tx.value);
         state.get(tx.sender).balance -= tx.value;
         state.get_or_create(*tx.to).balance += tx.value;
         state.touch(*tx.to);
@@ -100,10 +118,8 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     const auto refund = std::min(refund_raw, refund_limit);
     gas_used -= refund;
 
-    const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
-
-    assert(tx.max_gas_price >= base_fee);
-    assert(tx.max_gas_price >= tx.max_priority_gas_price);
+    assert(tx.max_gas_price >= base_fee);                   // Checked at the front.
+    assert(tx.max_gas_price >= tx.max_priority_gas_price);  // Checked at the front.
 
     const auto priority_gas_price =
         std::min(tx.max_priority_gas_price, tx.max_gas_price - base_fee);

@@ -101,11 +101,13 @@ static void run_state_test(const json::json& j)
     // Common transaction part.
     if (tr.contains("gasPrice"))
     {
+        tx.kind = Tx::Kind::legacy;
         tx.max_gas_price = from_json<intx::uint256>(tr["gasPrice"]);
         tx.max_priority_gas_price = tx.max_gas_price;
     }
     else
     {
+        tx.kind = Tx::Kind::eip1559;
         tx.max_gas_price = from_json<intx::uint256>(tr["maxFeePerGas"]);
         tx.max_priority_gas_price = from_json<intx::uint256>(tr["maxPriorityFeePerGas"]);
     }
@@ -244,7 +246,7 @@ int main(int argc, char* argv[])
         "stDelegatecallTestHomestead.*:"
         "stEIP150singleCodeGasPrices.*:"
         "stEIP150Specific.*:"
-        // "stEIP1559.*:"
+        "stEIP1559.*:"
         "stEIP158Specific.*:"
         // "stEIP2930.*:"
         "stEIP2930.transactionCosts:"
@@ -277,7 +279,7 @@ int main(int argc, char* argv[])
         "stStaticCall.*:"
         "stStaticFlagEnabled.*:"
         "stSystemOperationsTest.*:"
-        // "stTimeConsuming.*:"
+        "stTimeConsuming.*:"
         "stTransactionTest.*:"
         "stTransitionTest.*:"
         "stWalletTest.*:"
@@ -298,6 +300,7 @@ int main(int argc, char* argv[])
         "*.*Sha256*:*.*sha256*:"
         "*.*dentit*:"
         "*.*modexp*:"
+        "*.*Blake2*:"
         "stBadOpcode.invalidAddr:"
         "stSolidityTest.TestCryptographicFunctions:"
         "stSpecialTest.failed_tx_xcf416c53:"
