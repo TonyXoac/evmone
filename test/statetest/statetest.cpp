@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
         "stEIP158Specific.*:"
         "stEIP2930.*:"
         "stEIP2930.transactionCosts:"
-        // "stEIP3607.*:"
+        "stEIP3607.*:"
         "stExample.*:"
         "stExtCodeHash.*:"
         "stHomesteadSpecific.*:"

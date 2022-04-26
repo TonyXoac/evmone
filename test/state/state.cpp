@@ -37,7 +37,7 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
     static constexpr auto call_tx_cost = 21000;
     static constexpr auto create_tx_cost = 53000;
     const bool is_create = !tx.to.has_value();
-    assert(rev >= EVMC_HOMESTEAD || !is_create);
+    // FIXME: assert(rev >= EVMC_HOMESTEAD || !is_create);
     const auto tx_cost = is_create ? create_tx_cost : call_tx_cost;
     return tx_cost + compute_tx_data_cost(rev, tx.data) + compute_access_list_cost(tx.access_list);
 }
@@ -53,6 +53,9 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
 
     if (block.gas_limit < tx.gas_limit)
         return false;
+
+    if (!state.get(tx.sender).code.empty())
+        return false;  // Tx origin must not be a contract (EIP-3607).
 
     const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
 
