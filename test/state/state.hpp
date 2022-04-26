@@ -472,6 +472,13 @@ public:
             addr <= 0x0000000000000000000000000000000000000009_address)
             return EVMC_ACCESS_WARM;
 
+        // Check tx access list.
+        for (const auto& [a, _] : m_tx.access_list)
+        {
+            if (a == addr)
+                return EVMC_ACCESS_WARM;
+        }
+
         if (m_accessed_addresses.count(addr) != 0)
             return EVMC_ACCESS_WARM;
 

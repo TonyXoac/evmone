@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
         "stEIP150Specific.*:"
         "stEIP1559.*:"
         "stEIP158Specific.*:"
-        // "stEIP2930.*:"
+        "stEIP2930.*:"
         "stEIP2930.transactionCosts:"
         // "stEIP3607.*:"
         "stExample.*:"
