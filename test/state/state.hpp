@@ -5,6 +5,7 @@
 #pragma once
 
 #include "account.hpp"
+#include "precompiles.hpp"
 #include "rlp.hpp"
 #include "utils.hpp"
 #include <iostream>
@@ -363,12 +364,6 @@ public:
         //           << "  to: " << hex({msg.recipient.bytes, sizeof(address)}) << "\n"
         //           << "  code: " << hex({msg.code_address.bytes, sizeof(address)}) << "\n";
 
-        if (!evmc::is_zero(msg.recipient) &&
-            msg.recipient <= 0x000000000000000000000000000000000000000a_address)
-        {
-            assert(false && "precompiles not implemented");
-        }
-
         auto state_snapshot = m_state;
         const auto refund_snapshot = m_refund;
         auto destructs_snapshot = m_destructs;
@@ -399,6 +394,13 @@ public:
                 m_state.get(msg.recipient).balance += value;
                 m_state.get(msg.sender).balance -= value;
             }
+
+            if (!evmc::is_zero(msg.recipient) &&
+                msg.recipient <= 0x000000000000000000000000000000000000000a_address)
+            {
+                return call_precompiled(m_rev, msg);
+            }
+
             bytes_view code = code_acc != nullptr ? code_acc->code : bytes_view{};
             result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
         }

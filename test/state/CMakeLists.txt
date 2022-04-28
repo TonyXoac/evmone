@@ -9,6 +9,8 @@ target_include_directories(evmone-state PRIVATE ${evmone_private_include_dir})
 target_sources(
     evmone-state PRIVATE
     account.hpp
+    precompiles.hpp
+    precompiles.cpp
     rlp.hpp
     state.hpp
     state.cpp
