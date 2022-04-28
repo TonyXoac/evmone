@@ -292,13 +292,12 @@ int main(int argc, char* argv[])
         "stMemoryTest.memCopySelf:"
         // Slow tests.
         "stCreateTest.CreateOOGafterMaxCodesize:"  // pass
-        "VMTests/vmPerformance.*:"                 // status unknown
+        "VMTests/vmPerformance.*:"                 // pass
         // Disable precompiles.
         "*.*Precompile*:*.*precompile*:"
         "*.*Ecrecover*:*.*ecrec*:*.*ECRecover*:"
         "*.*Ripemd160*:*.*rip160*:"
         "*.*Sha256*:*.*sha256*:"
-        "*.*dentit*:"
         "*.*modexp*:"
         "*.*Blake2*:"
         "stBadOpcode.invalidAddr:"
