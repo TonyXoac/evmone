@@ -233,11 +233,7 @@ int main(int argc, char* argv[])
         "-"
         // Known failures.
         "stCreateTest.CreateCollisionResults:"
-        "stPreCompiledContracts2.modexpRandomInput:"
         "stRandom.randomStatetest101:"  // blockhash
-        "stRandom2.randomStatetest642:"
-        "stRandom2.randomStatetest644:"
-        "stRandom2.randomStatetest645:"
         "stRevertTest.RevertPrecompiledTouch:"
         "stRevertTest.RevertPrecompiledTouch_storage:"
         "stSpecialTest.failed_tx_xcf416c53:"

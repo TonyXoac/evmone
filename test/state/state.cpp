@@ -104,8 +104,16 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
         // TODO: Probably the tx.to should be touched here.
         evmc_message msg{EVMC_CALL, 0, 0, execution_gas_limit, *tx.to, tx.sender, tx.data.data(),
             tx.data.size(), value_be, {}, *tx.to};
-        bytes_view code = state.get(*tx.to).code;
-        result = vm.execute(host, rev, msg, code.data(), code.size());
+        if (!evmc::is_zero(msg.code_address) &&
+            msg.code_address <= 0x0000000000000000000000000000000000000009_address)
+        {
+            result = call_precompiled(rev, msg);
+        }
+        else
+        {
+            bytes_view code = state.get(*tx.to).code;
+            result = vm.execute(host, rev, msg, code.data(), code.size());
+        }
     }
 
     const auto gas_left = result.gas_left;
