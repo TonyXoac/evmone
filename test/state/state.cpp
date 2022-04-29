@@ -37,7 +37,7 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
     static constexpr auto call_tx_cost = 21000;
     static constexpr auto create_tx_cost = 53000;
     const bool is_create = !tx.to.has_value();
-    // FIXME: assert(rev >= EVMC_HOMESTEAD || !is_create);
+    assert(rev >= EVMC_HOMESTEAD || !is_create);
     const auto tx_cost = is_create ? create_tx_cost : call_tx_cost;
     return tx_cost + compute_tx_data_cost(rev, tx.data) + compute_access_list_cost(tx.access_list);
 }
@@ -147,15 +147,17 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
             accounts.erase(addr);
     }
 
-    for (auto it = accounts.begin(); it != accounts.end();)
+    if (rev >= EVMC_SPURIOUS_DRAGON)  // TODO: The enable point is very poorly tested.
     {
-        const auto& acc = it->second;
-        // if (acc.is_empty() && !acc.touched)
-            // std::cout << "NOT TOUCHED: " << evmc::hex({it->first.bytes, sizeof(it->first)}) << "\n";
-        if (acc.touched && acc.is_empty())
-            accounts.erase(it++);
-        else
-            ++it;
+        // Clear touched empty accounts.
+        for (auto it = accounts.begin(); it != accounts.end();)
+        {
+            const auto& acc = it->second;
+            if (acc.touched && acc.is_empty())
+                accounts.erase(it++);
+            else
+                ++it;
+        }
     }
     return true;
 }

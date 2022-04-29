@@ -233,7 +233,6 @@ int main(int argc, char* argv[])
         "-"
         // Known failures.
         "stCreateTest.CreateCollisionResults:"
-        "stPreCompiledContracts2.CallEcrecover_Overflow:"
         "stPreCompiledContracts2.modexpRandomInput:"
         "stRandom.randomStatetest101:"  // blockhash
         "stRandom2.randomStatetest642:"
