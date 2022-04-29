@@ -229,86 +229,30 @@ public:
 int main(int argc, char* argv[])
 {
     constexpr auto known_passing_tests =
-        "stArgsZeroOneBalance.*:"
-        "stAttackTest.*:"
-        "stBadOpcode.*:"
-        "stBugs.*:"
-        "stCallCodes.*:"
-        "stCallCreateCallCodeTest.*:"
-        "stCallCreateCallCodeTest.call*:"
-        "stCallDelegateCodesCallCodeHomestead.*:"
-        "stCallDelegateCodesHomestead.*:"
-        "stChainId.*:"
-        "stCodeCopyTest.*:"
-        "stCodeSizeLimit.*:"
-        "stCreate2.*:"
-        "stCreateTest.*:"
-        "stDelegatecallTestHomestead.*:"
-        "stEIP150singleCodeGasPrices.*:"
-        "stEIP150Specific.*:"
-        "stEIP1559.*:"
-        "stEIP158Specific.*:"
-        "stEIP2930.*:"
-        "stEIP2930.transactionCosts:"
-        "stEIP3607.*:"
-        "stExample.*:"
-        "stExtCodeHash.*:"
-        "stHomesteadSpecific.*:"
-        "stInitCodeTest.*:"
-        "stLogTests.*:"
-        "stMemExpandingEIP150Calls.*:"
-        "stMemoryStressTest.*:"
-        "stMemoryTest.*:"
-        "stNonZeroCallsTest.*:"
-        // "stPreCompiledContracts.*:"
-        // "stPreCompiledContracts2.*:"
-        "stQuadraticComplexityTest.*:"
-        // "stRandom.*:"
-        // "stRandom2.*:"
-        "stRecursiveCreate.*:"
-        "stRefundTest.*:"
-        "stReturnDataTest.*:"
-        "stRevertTest.*:"
-        "stSelfBalance.*:"
-        "stShift.*:"
-        "stSLoadTest.*:"
-        "stSolidityTest.*:"
-        "stSpecialTest.*:"
-        "stSStoreTest.*:"
-        "stStackTests.*:"
-        "stStaticCall.*:"
-        "stStaticFlagEnabled.*:"
-        "stSystemOperationsTest.*:"
-        "stTimeConsuming.*:"
-        "stTransactionTest.*:"
-        "stTransitionTest.*:"
-        "stWalletTest.*:"
-        "stZeroCallsRevert.*:"
-        "stZeroCallsTest.*:"
-        "VMTests/*.*:"
+        "*.*:"
         "-"
-        "stArgsZeroOneBalance.*NonConst:"  // has precompiles
+        // Known failures.
+        "stArgsZeroOneBalance.callNonConst:"
         "stCreateTest.CreateCollisionResults:"
-        "stMemoryTest.memCopySelf:"
+        "stPreCompiledContracts.precompsEIP2929:"
+        "stPreCompiledContracts2.CallEcrecover0_NoGas:"
+        "stPreCompiledContracts2.CallEcrecover_Overflow:"
+        "stPreCompiledContracts2.modexpRandomInput:"
+        "stRandom.randomStatetest101:"  // blockhash
+        "stRandom2.randomStatetest642:"
+        "stRandom2.randomStatetest644:"
+        "stRandom2.randomStatetest645:"
+        "stRevertTest.RevertPrecompiledTouch*:"
         // Slow tests.
-        "stCreateTest.CreateOOGafterMaxCodesize:"  // pass
-        "VMTests/vmPerformance.*:"                 // pass
-        // Disable precompiles.
-        "*.*Precompile*:*.*precompile*:"
-        "*.*Ecrecover*:*.*ecrec*:*.*ECRecover*:"
-        "*.*Ripemd160*:*.*rip160*:"
-        "*.*Sha256*:*.*sha256*:"
-        "*.*modexp*:"
-        "*.*Blake2*:"
-        "stBadOpcode.invalidAddr:"
-        "stSolidityTest.TestCryptographicFunctions:"
-        "stSpecialTest.failed_tx_xcf416c53:"
-        "stSpecialTest.selfdestructEIP2929:"
-        "stExtCodeHash.codeCopyZero:"
+        "stCreateTest.CreateOOGafterMaxCodesize:"      // pass
+        "stQuadraticComplexityTest.Call50000_sha256:"  // pass
+        "stTimeConsuming.static_Call50000_sha256:"     // pass
+        "stTimeConsuming.CALLBlake2f_MaxRounds:"       // pass
+        "VMTests/vmPerformance.*:"                     // pass
         /**/
         ;
 
-    // constexpr auto single_test = "stCreateTest.CREATE_HighNonceMinus1:"sv;
+    // constexpr auto single_test = "stPreCompiledContracts.*:"sv;
     constexpr auto single_test = ""sv;
 
     std::string filter = "--gtest_filter=";

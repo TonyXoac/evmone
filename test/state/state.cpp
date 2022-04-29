@@ -150,8 +150,8 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
     for (auto it = accounts.begin(); it != accounts.end();)
     {
         const auto& acc = it->second;
-        if (acc.is_empty() && !acc.touched)
-            std::cout << "NOT TOUCHED: " << evmc::hex({it->first.bytes, sizeof(it->first)}) << "\n";
+        // if (acc.is_empty() && !acc.touched)
+            // std::cout << "NOT TOUCHED: " << evmc::hex({it->first.bytes, sizeof(it->first)}) << "\n";
         if (acc.touched && acc.is_empty())
             accounts.erase(it++);
         else

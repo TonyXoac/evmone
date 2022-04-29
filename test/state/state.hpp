@@ -395,8 +395,8 @@ public:
                 m_state.get(msg.sender).balance -= value;
             }
 
-            if (!evmc::is_zero(msg.recipient) &&
-                msg.recipient <= 0x000000000000000000000000000000000000000a_address)
+            if (!evmc::is_zero(msg.code_address) &&
+                msg.code_address <= 0x0000000000000000000000000000000000000009_address)
             {
                 return call_precompiled(m_rev, msg);
             }
