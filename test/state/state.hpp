@@ -398,11 +398,13 @@ public:
             if (!evmc::is_zero(msg.code_address) &&
                 msg.code_address <= 0x0000000000000000000000000000000000000009_address)
             {
-                return call_precompiled(m_rev, msg);
+                result = call_precompiled(m_rev, msg);
             }
-
-            bytes_view code = code_acc != nullptr ? code_acc->code : bytes_view{};
-            result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+            else
+            {
+                bytes_view code = code_acc != nullptr ? code_acc->code : bytes_view{};
+                result = m_vm.execute(*this, m_rev, msg, code.data(), code.size());
+            }
         }
         // std::cout << "- RESULT " << result.status_code << "\n"
         //           << "  gas: " << result.gas_left << "\n";
@@ -413,6 +415,11 @@ public:
             m_refund = refund_snapshot;
             m_destructs = std::move(destructs_snapshot);
             m_accessed_addresses = std::move(access_addresses_snapshot);  // TODO: Check if needed.
+
+            // 0x03 precompile quirk?
+            // if (msg.kind == EVMC_CALL &&
+            //     msg.code_address == 0x0000000000000000000000000000000000000003_address)
+            //     m_state.touch(msg.code_address);
 
             // For CREATE the nonce bump is not reverted.
             if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)

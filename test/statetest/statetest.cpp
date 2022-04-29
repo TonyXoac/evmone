@@ -232,17 +232,16 @@ int main(int argc, char* argv[])
         "*.*:"
         "-"
         // Known failures.
-        "stArgsZeroOneBalance.callNonConst:"
         "stCreateTest.CreateCollisionResults:"
-        "stPreCompiledContracts.precompsEIP2929:"
-        "stPreCompiledContracts2.CallEcrecover0_NoGas:"
         "stPreCompiledContracts2.CallEcrecover_Overflow:"
         "stPreCompiledContracts2.modexpRandomInput:"
         "stRandom.randomStatetest101:"  // blockhash
         "stRandom2.randomStatetest642:"
         "stRandom2.randomStatetest644:"
         "stRandom2.randomStatetest645:"
-        "stRevertTest.RevertPrecompiledTouch*:"
+        "stRevertTest.RevertPrecompiledTouch:"
+        "stRevertTest.RevertPrecompiledTouch_storage:"
+        "stSpecialTest.failed_tx_xcf416c53:"
         // Slow tests.
         "stCreateTest.CreateOOGafterMaxCodesize:"      // pass
         "stQuadraticComplexityTest.Call50000_sha256:"  // pass
