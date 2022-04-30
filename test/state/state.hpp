@@ -302,13 +302,21 @@ public:
         if (msg.depth != 0)
         {
             if (!m_state.get(msg.sender).bump_nonce())
-                return {EVMC_OUT_OF_GAS, msg.gas, nullptr, 0};  // Gas is not consumed.
+            {
+                evmc::result result{EVMC_OUT_OF_GAS, msg.gas, nullptr, 0};  // Gas is not consumed.
+                result.create_address = new_addr;
+                return result;
+            }
         }
 
         // Check collision as defined in pseudo-EIP https://github.com/ethereum/EIPs/issues/684.
         if (const auto collision_acc = m_state.get_or_null(new_addr);
             collision_acc != nullptr && !(collision_acc->nonce == 0 && collision_acc->code.empty()))
-            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+        {
+            evmc::result result{EVMC_OUT_OF_GAS, 0, nullptr, 0};
+            result.create_address = new_addr;
+            return result;
+        }
 
         auto& new_acc = m_state.get_or_create(new_addr);
         if (m_rev >= EVMC_SPURIOUS_DRAGON)
@@ -331,23 +339,38 @@ public:
         // Execution can modify the state, iterators are invalidated.
         auto result = m_vm.execute(*this, m_rev, create_msg, msg.input_data, msg.input_size);
         if (result.status_code != EVMC_SUCCESS)
+        {
+            result.create_address = new_addr;
             return result;
+        }
 
         auto gas_left = result.gas_left;
 
         bytes_view code{result.output_data, result.output_size};
         assert(m_rev >= EVMC_SPURIOUS_DRAGON || code.size() <= 0x6000);
         if (code.size() > 0x6000)
-            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+        {
+            evmc::result r{EVMC_OUT_OF_GAS, 0, nullptr, 0};
+            r.create_address = new_addr;
+            return r;
+        }
 
         const auto cost = int64_t{200} * static_cast<int64_t>(code.size());
         gas_left -= cost;
         if (gas_left < 0)
-            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+        {
+            evmc::result r{EVMC_OUT_OF_GAS, 0, nullptr, 0};
+            r.create_address = new_addr;
+            return r;
+        }
 
         // Reject EF code.
         if (m_rev >= EVMC_LONDON && !code.empty() && code[0] == 0xEF)
-            return {EVMC_OUT_OF_GAS, 0, nullptr, 0};
+        {
+            evmc::result r{EVMC_OUT_OF_GAS, 0, nullptr, 0};
+            r.create_address = new_addr;
+            return r;
+        }
 
         // TODO: Somehow the new_acc pointer is invalid.
         m_state.get(new_addr).code = code;
@@ -373,6 +396,7 @@ public:
         if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
         {
             result = create(msg);
+            assert(!evmc::is_zero(result.create_address));
         }
         else
         {
@@ -414,7 +438,11 @@ public:
             m_state = std::move(state_snapshot);
             m_refund = refund_snapshot;
             m_destructs = std::move(destructs_snapshot);
-            m_accessed_addresses = std::move(access_addresses_snapshot);  // TODO: Check if needed.
+            m_accessed_addresses = std::move(access_addresses_snapshot);
+
+            // By EIP-2929, the new access to new created address is never reverted.
+            if (!evmc::is_zero(result.create_address))
+                m_accessed_addresses.insert(result.create_address);
 
             // 0x03 precompile quirk?
             // if (msg.kind == EVMC_CALL &&

@@ -232,7 +232,6 @@ int main(int argc, char* argv[])
         "*.*:"
         "-"
         // Known failures.
-        "stCreateTest.CreateCollisionResults:"
         "stRevertTest.RevertPrecompiledTouch:"
         "stRevertTest.RevertPrecompiledTouch_storage:"
         "stSpecialTest.failed_tx_xcf416c53:"
