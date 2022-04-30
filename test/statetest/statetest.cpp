@@ -231,10 +231,6 @@ int main(int argc, char* argv[])
     constexpr auto known_passing_tests =
         "*.*:"
         "-"
-        // Known failures.
-        "stRevertTest.RevertPrecompiledTouch:"
-        "stRevertTest.RevertPrecompiledTouch_storage:"
-        "stSpecialTest.failed_tx_xcf416c53:"
         // Slow tests.
         "stCreateTest.CreateOOGafterMaxCodesize:"      // pass
         "stQuadraticComplexityTest.Call50000_sha256:"  // pass

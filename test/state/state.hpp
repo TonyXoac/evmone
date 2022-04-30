@@ -434,6 +434,9 @@ public:
         //           << "  gas: " << result.gas_left << "\n";
         if (result.status_code != EVMC_SUCCESS)
         {
+            static constexpr auto addr_03 = 0x0000000000000000000000000000000000000003_address;
+            const auto is_03_touched = m_state.get_or_null(addr_03) && m_state.get(addr_03).touched;
+
             // Revert.
             m_state = std::move(state_snapshot);
             m_refund = refund_snapshot;
@@ -444,10 +447,9 @@ public:
             if (!evmc::is_zero(result.create_address))
                 m_accessed_addresses.insert(result.create_address);
 
-            // 0x03 precompile quirk?
-            // if (msg.kind == EVMC_CALL &&
-            //     msg.code_address == 0x0000000000000000000000000000000000000003_address)
-            //     m_state.touch(msg.code_address);
+            // The 0x03 quirk: the touch on this address is never reverted.
+            if (is_03_touched)
+                m_state.touch(addr_03);
 
             // For CREATE the nonce bump is not reverted.
             if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
