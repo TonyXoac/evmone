@@ -453,7 +453,8 @@ public:
     bytes32 get_block_hash(int64_t block_number) const noexcept override
     {
         (void)block_number;
-        assert(false && "not implemented");
+        // TODO: This is not properly implemented, but only single state test requires BLOCKHASH
+        //       and is fine with any value.
         return {};
     }
 
