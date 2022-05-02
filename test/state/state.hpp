@@ -391,6 +391,7 @@ public:
         const auto refund_snapshot = m_refund;
         auto destructs_snapshot = m_destructs;
         auto access_addresses_snapshot = m_accessed_addresses;
+        auto logs_snapshot = logs;
 
         evmc::result result{EVMC_INTERNAL_ERROR, 0, nullptr, 0};
         if (msg.kind == EVMC_CREATE || msg.kind == EVMC_CREATE2)
@@ -442,6 +443,7 @@ public:
             m_refund = refund_snapshot;
             m_destructs = std::move(destructs_snapshot);
             m_accessed_addresses = std::move(access_addresses_snapshot);
+            logs = std::move(logs_snapshot);
 
             // By EIP-2929, the new access to new created address is never reverted.
             if (!evmc::is_zero(result.create_address))
@@ -488,15 +490,25 @@ public:
         return {};
     }
 
+    struct Log
+    {
+        address addr;
+        bytes data;
+        std::vector<hash256> topics;
+    };
+
+    std::vector<Log> logs;
+
     void emit_log(const address& addr, const uint8_t* data, size_t data_size,
         const bytes32 topics[], size_t topics_count) noexcept override
     {
-        (void)addr;
-        (void)data;
-        (void)data_size;
-        (void)topics;
-        (void)topics_count;
-        // FIXME: Store logs.
+        Log log;
+        log.addr = addr;
+        log.data = bytes{data, data_size};
+        for (size_t i = 0 ; i < topics_count; ++i)
+            log.topics.push_back(topics[i]);
+
+        logs.push_back(std::move(log));
     }
 
     evmc_access_status access_account(const address& addr) noexcept override
@@ -543,7 +555,13 @@ public:
     }
 };
 
-[[nodiscard]] bool transition(
+struct TransitionResult
+{
+    bool success;
+    hash256 logs_hash;
+};
+
+[[nodiscard]] TransitionResult transition(
     State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm);
 
 hash256 trie_hash(const State& state);

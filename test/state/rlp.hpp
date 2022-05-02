@@ -75,6 +75,21 @@ inline bytes list(const Items&... items)
     return r;
 }
 
+inline bytes list_raw(bytes_view items)
+{
+    const auto items_len = items.size();
+    assert(items_len <= 0xffff);
+    bytes r;
+    if (items_len <= 55)
+        r = {static_cast<uint8_t>(0xc0 + items_len)};
+    else if (items_len <= 0xff)
+        r = {0xf7 + 1, static_cast<uint8_t>(items_len)};
+    else if (items_len <= 0xffff)
+        r = {0xf7 + 2, static_cast<uint8_t>(items_len >> 8), static_cast<uint8_t>(items_len)};
+    r += bytes{items};
+    return r;
+}
+
 inline bytes encode(const state::Account& a)
 {
     // TODO: This function should be removed.

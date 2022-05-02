@@ -43,45 +43,46 @@ int64_t compute_tx_intrinsic_cost(evmc_revision rev, const Tx& tx) noexcept
 }
 }  // namespace
 
-bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
+TransitionResult transition(
+    State& state, const BlockInfo& block, const Tx& tx, evmc_revision rev, evmc::VM& vm)
 {
     if (rev < EVMC_LONDON && tx.kind == Tx::Kind::eip1559)
-        return false;
+        return {false, {}};
 
     if (tx.max_gas_price < tx.max_priority_gas_price)
-        return false;  // tip too high
+        return {false, {}};  // tip too high
 
     if (block.gas_limit < tx.gas_limit)
-        return false;
+        return {false, {}};
 
     if (!state.get(tx.sender).code.empty())
-        return false;  // Tx origin must not be a contract (EIP-3607).
+        return {false, {}};  // Tx origin must not be a contract (EIP-3607).
 
     const auto base_fee = (rev >= EVMC_LONDON) ? block.base_fee : 0;
 
     if (tx.max_gas_price < base_fee)
-        return false;
+        return {false, {}};
 
     // FIXME: The effective_gas_price should be used.
     const auto tx_max_cost = intx::uint512{tx.gas_limit} * intx::uint512{tx.max_gas_price};
     if (state.get(tx.sender).balance < tx_max_cost)
-        return false;
+        return {false, {}};
 
     const auto execution_gas_limit = tx.gas_limit - compute_tx_intrinsic_cost(rev, tx);
     if (execution_gas_limit < 0)
-        return false;
+        return {false, {}};
 
     state.get(tx.sender).balance -= static_cast<intx::uint256>(tx_max_cost);
 
     if (state.get(tx.sender).balance < tx.value)
     {
         state.get(tx.sender).balance += static_cast<intx::uint256>(tx_max_cost);
-        return false;  // FIXME: sender balance is wrong.
+        return {false, {}};  // FIXME: sender balance is wrong.
     }
 
     // Bump sender nonce. This must be the last transaction validity check.
     if (!state.get(tx.sender).bump_nonce())
-        return false;
+        return {false, {}};
 
     const auto state_snapshot = state;
 
@@ -167,7 +168,33 @@ bool transition(State& state, const BlockInfo& block, const Tx& tx, evmc_revisio
                 ++it;
         }
     }
-    return true;
+
+    bytes empty_rlp_list{0xc0};
+    bytes rlp_logs;
+    if (result.status_code != EVMC_SUCCESS || host.logs.empty())
+    {
+        rlp_logs = empty_rlp_list;
+    }
+    else
+    {
+        bytes logs_items;
+        for (const auto& log : host.logs)
+        {
+            bytes topics_items;
+            for (const auto& topic : log.topics)
+                topics_items += rlp::string(topic);
+            const auto rlp_topics = rlp::list_raw(topics_items);
+
+            const auto items = rlp::string(bytes_view{log.addr.bytes, sizeof(log.addr)}) +
+                               rlp_topics + rlp::string(log.data);
+            logs_items += rlp::list_raw(items);
+        }
+        rlp_logs = rlp::list_raw(logs_items);
+    }
+    // std::cout << "RLP LOGS:\n" << hex(rlp_logs) << "\n";
+    auto logs_hash = keccak256(rlp_logs);
+
+    return {true, logs_hash};
 }
 
 hash256 trie_hash(const State& state)
