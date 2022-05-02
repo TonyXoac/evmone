@@ -63,26 +63,6 @@ inline bytes string(uint64_t x)
     return string({&b[i], l});
 }
 
-template <typename... Items>
-inline bytes list(const Items&... items)
-{
-    const bytes string_items[] = {string(items)...};
-    size_t items_len = 0;
-    for (const auto& s : string_items)
-        items_len += std::size(s);
-    assert(items_len <= 0xffff);
-    bytes r;
-    if (items_len <= 55)
-        r = {static_cast<uint8_t>(0xc0 + items_len)};
-    else if (items_len <= 0xff)
-        r = {0xf7 + 1, static_cast<uint8_t>(items_len)};
-    else if (items_len <= 0xffff)
-        r = {0xf7 + 2, static_cast<uint8_t>(items_len >> 8), static_cast<uint8_t>(items_len)};
-    for (const auto& s : string_items)
-        r += s;
-    return r;
-}
-
 inline bytes list_raw(bytes_view items)
 {
     const auto items_len = items.size();
@@ -97,8 +77,14 @@ inline bytes list_raw(bytes_view items)
     else if (items_len <= 0xffffff)
         r = {0xf7 + 3, static_cast<uint8_t>(items_len >> 16), static_cast<uint8_t>(items_len >> 8),
             static_cast<uint8_t>(items_len)};
-    r += bytes{items};
+    r += items;
     return r;
+}
+
+template <typename... Items>
+inline bytes list(const Items&... items)
+{
+    return list_raw((string(items) + ...));
 }
 
 inline bytes encode(const state::Account& a)
