@@ -236,7 +236,7 @@ int main(int argc, char* argv[])
     constexpr auto known_passing_tests =
         "*.*:"
         "-"
-        "stRandom*.*:"  // rlp encoding issue
+        // "stRandom*.*:"  // rlp encoding issue
         // Slow tests.
         "stCreateTest.CreateOOGafterMaxCodesize:"      // pass
         "stQuadraticComplexityTest.Call50000_sha256:"  // pass
