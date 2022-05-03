@@ -86,24 +86,6 @@ inline Path common_prefix(const Path& p, const Path& q)
     return r;
 }
 
-struct BranchNode
-{
-    hash256 items[16]{};
-    void insert(uint8_t nibble, const hash256& value) { items[nibble] = value; }
-
-    [[nodiscard]] bytes rlp() const
-    {
-        const auto f = [](const hash256& h) {
-            return (h != hash256{}) ? bytes_view{h.bytes, sizeof(h)} : bytes_view{};
-        };
-
-        return rlp::list(f(items[0]), f(items[1]), f(items[2]), f(items[3]), f(items[4]),
-            f(items[5]), f(items[6]), f(items[7]), f(items[8]), f(items[9]), f(items[10]),
-            f(items[11]), f(items[12]), f(items[13]), f(items[14]), f(items[15]), bytes_view{});
-    }
-
-    [[nodiscard]] hash256 hash() const { return keccak256(rlp()); }
-};
 
 /// Insert-only Trie implementation for getting the root hash out of (key, value) pairs.
 /// Based on StackTrie from go-ethereum.
@@ -117,10 +99,12 @@ class Trie
         branch
     };
 
+    static constexpr uint8_t num_children = 16;
+
     NodeType m_type{NodeType::null};
     Path m_path{{}};
     bytes m_value;
-    std::unique_ptr<Trie> children[16];
+    std::unique_ptr<Trie> children[num_children];
 
     Trie(NodeType type, const Path& path, bytes_view value = {})
       : m_type{type}, m_path{path}, m_value{value}
@@ -263,13 +247,33 @@ public:
         case NodeType::branch:
         {
             assert(m_path.num_nibbles == 0);
-            BranchNode node;
-            for (uint8_t i = 0; i < std::size(children); ++i)
+
+            // Temporary storage for children hashes.
+            // The `bytes` type could be used instead, but this way dynamic allocation is avoided.
+            hash256 children_hashes[num_children];
+
+            // Views of children hash bytes. Additional item for hash list
+            // terminator (always empty). Does not seem needed for correctness,
+            // but this is what the spec says.
+            bytes_view children_hash_bytes[num_children + 1];
+
+            for (uint8_t i = 0; i < num_children; ++i)
             {
                 if (children[i])
-                    node.insert(i, children[i]->hash());
+                {
+                    children_hashes[i] = children[i]->hash();
+                    children_hash_bytes[i] = {children_hashes[i].bytes, sizeof(hash256)};
+                }
             }
-            r = node.hash();
+
+            const auto d = rlp::list(children_hash_bytes[0], children_hash_bytes[1],
+                children_hash_bytes[2], children_hash_bytes[3], children_hash_bytes[4],
+                children_hash_bytes[5], children_hash_bytes[6], children_hash_bytes[7],
+                children_hash_bytes[8], children_hash_bytes[9], children_hash_bytes[10],
+                children_hash_bytes[11], children_hash_bytes[12], children_hash_bytes[13],
+                children_hash_bytes[14], children_hash_bytes[15], children_hash_bytes[16]);
+
+            r = keccak256(d);
             break;
         }
         case NodeType::ext:
