@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "account.hpp"
 #include "utils.hpp"
 #include <cassert>
 
@@ -96,12 +95,4 @@ inline bytes list(const Items&... items)
     return list_raw((string(items) + ...));
 }
 
-inline bytes encode(const state::Account& a)
-{
-    // TODO: This function should be removed.
-    assert(a.storage.empty());
-    const auto balance_bytes = intx::be::store<evmc::uint256be>(a.balance);
-    const auto code_hash = keccak256(a.code);
-    return rlp::list(a.nonce, rlp::trim(balance_bytes), state::emptyTrieHash, code_hash);
-}
 }  // namespace evmone::rlp
