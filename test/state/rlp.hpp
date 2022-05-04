@@ -35,17 +35,19 @@ inline bytes_view trim(bytes_view b) noexcept
     return b;
 }
 
-inline bytes_view trim(const evmc::uint256be& v) noexcept
-{
-    return trim({v.bytes, sizeof(v)});
-}
-
 inline bytes string(const hash256& b)
 {
     return string({b.bytes, sizeof(b)});
 }
 
 inline bytes string(uint64_t x)
+{
+    uint8_t b[sizeof(x)];
+    intx::be::store(b, x);
+    return string(trim({b, sizeof(b)}));
+}
+
+inline bytes string(const intx::uint256& x)
 {
     uint8_t b[sizeof(x)];
     intx::be::store(b, x);
