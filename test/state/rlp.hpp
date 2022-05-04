@@ -29,16 +29,15 @@ inline bytes string(bytes_view data)
            bytes{data};
 }
 
-inline bytes_view trim(const evmc::uint256be& v)
+inline bytes_view trim(bytes_view b) noexcept
 {
-    size_t i = 0;
-    for (; i < sizeof(v); ++i)
-    {
-        if (v.bytes[i] != 0)
-            break;
-    }
-    const size_t l = sizeof(v) - i;
-    return {&v.bytes[i], l};
+    b.remove_prefix(std::min(b.find_first_not_of(uint8_t{0x00}), b.size()));
+    return b;
+}
+
+inline bytes_view trim(const evmc::uint256be& v) noexcept
+{
+    return trim({v.bytes, sizeof(v)});
 }
 
 inline bytes string(const hash256& b)
@@ -49,17 +48,8 @@ inline bytes string(const hash256& b)
 inline bytes string(uint64_t x)
 {
     uint8_t b[sizeof(x)];
-    const auto be = __builtin_bswap64(x);
-    __builtin_memcpy(b, &be, sizeof(be));
-
-    size_t i = 0;
-    for (; i < sizeof(b); ++i)
-    {
-        if (b[i] != 0)
-            break;
-    }
-    const size_t l = sizeof(b) - i;
-    return string({&b[i], l});
+    intx::be::store(b, x);
+    return string(trim({b, sizeof(b)}));
 }
 
 inline bytes list_raw(bytes_view items)
