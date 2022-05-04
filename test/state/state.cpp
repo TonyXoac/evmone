@@ -181,9 +181,7 @@ TransitionResult transition(
         for (const auto& log : host.logs)
         {
             bytes topics_items;
-            for (const auto& topic : log.topics)
-                topics_items += rlp::string(topic);
-            const auto rlp_topics = rlp::list_raw(topics_items);
+            const auto rlp_topics = rlp::list_raw(log.topics.begin(), log.topics.end());
 
             const auto items = rlp::string(bytes_view{log.addr.bytes, sizeof(log.addr)}) +
                                rlp_topics + rlp::string(log.data);

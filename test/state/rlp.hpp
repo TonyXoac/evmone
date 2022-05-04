@@ -81,6 +81,15 @@ inline bytes list_raw(bytes_view items)
     return r;
 }
 
+template <typename InputIterator>
+inline bytes list_raw(InputIterator begin, InputIterator end)
+{
+    bytes content;
+    for (auto it = begin; it != end; ++it)
+        content += string(*it);
+    return list_raw(content);
+}
+
 template <typename... Items>
 inline bytes list(const Items&... items)
 {

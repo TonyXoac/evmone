@@ -266,14 +266,8 @@ public:
                 }
             }
 
-            const auto d = rlp::list(children_hash_bytes[0], children_hash_bytes[1],
-                children_hash_bytes[2], children_hash_bytes[3], children_hash_bytes[4],
-                children_hash_bytes[5], children_hash_bytes[6], children_hash_bytes[7],
-                children_hash_bytes[8], children_hash_bytes[9], children_hash_bytes[10],
-                children_hash_bytes[11], children_hash_bytes[12], children_hash_bytes[13],
-                children_hash_bytes[14], children_hash_bytes[15], children_hash_bytes[16]);
-
-            r = keccak256(d);
+            r = keccak256(
+                rlp::list_raw(std::begin(children_hash_bytes), std::end(children_hash_bytes)));
             break;
         }
         case NodeType::ext:
