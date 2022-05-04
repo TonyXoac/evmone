@@ -9,24 +9,35 @@
 
 namespace evmone::rlp
 {
+namespace internal
+{
+template <uint8_t ShortBase, uint8_t LongBase>
+inline bytes encode_length(size_t l)
+{
+    static constexpr auto short_cutoff = 55;
+    static_assert(ShortBase + short_cutoff <= 0xff);
+    assert(l <= 0xffffff);
+
+    if (l <= short_cutoff)
+        return {static_cast<uint8_t>(ShortBase + l)};
+    else if (const auto l0 = static_cast<uint8_t>(l); l <= 0xff)
+        return {LongBase + 1, l0};
+    else if (const auto l1 = static_cast<uint8_t>(l >> 8); l <= 0xffff)
+        return {LongBase + 2, l1, l0};
+    else
+        return {LongBase + 3, static_cast<uint8_t>(l >> 16), l1, l0};
+}
+}  // namespace internal
+
 inline bytes string(bytes_view data)
 {
-    const auto l = std::size(data);
-    if (l == 1 && data[0] <= 0x7f)
-        return bytes{data[0]};
-    if (l <= 55)
-        return bytes{static_cast<uint8_t>(0x80 + l)} + bytes{data};
+    static constexpr uint8_t short_base = 0x80;
+    if (data.size() == 1 && data[0] < short_base)
+        return {data[0]};
 
-    if (l <= 0xff)
-        return bytes{0xb7 + 1, static_cast<uint8_t>(l)} + bytes{data};
-
-    if (l <= 0xffff)
-        return bytes{0xb7 + 2, static_cast<uint8_t>(l >> 8), static_cast<uint8_t>(l)} + bytes{data};
-
-    assert(l <= 0xffffff);
-    return bytes{0xb7 + 3, static_cast<uint8_t>(l >> 16), static_cast<uint8_t>(l >> 8),
-               static_cast<uint8_t>(l)} +
-           bytes{data};
+    auto r = internal::encode_length<short_base, 0xb7>(data.size());
+    r += data;
+    return r;
 }
 
 inline bytes_view trim(bytes_view b) noexcept
@@ -56,18 +67,7 @@ inline bytes string(const intx::uint256& x)
 
 inline bytes list_raw(bytes_view items)
 {
-    const auto items_len = items.size();
-    assert(items_len <= 0xffffff);
-    bytes r;
-    if (items_len <= 55)
-        r = {static_cast<uint8_t>(0xc0 + items_len)};
-    else if (items_len <= 0xff)
-        r = {0xf7 + 1, static_cast<uint8_t>(items_len)};
-    else if (items_len <= 0xffff)
-        r = {0xf7 + 2, static_cast<uint8_t>(items_len >> 8), static_cast<uint8_t>(items_len)};
-    else if (items_len <= 0xffffff)
-        r = {0xf7 + 3, static_cast<uint8_t>(items_len >> 16), static_cast<uint8_t>(items_len >> 8),
-            static_cast<uint8_t>(items_len)};
+    auto r = internal::encode_length<0xc0, 0xf7>(items.size());
     r += items;
     return r;
 }
