@@ -267,7 +267,7 @@ public:
             }
 
             r = keccak256(
-                rlp::list_raw(std::begin(children_hash_bytes), std::end(children_hash_bytes)));
+                rlp::string(std::begin(children_hash_bytes), std::end(children_hash_bytes)));
             break;
         }
         case NodeType::ext:

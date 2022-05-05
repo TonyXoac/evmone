@@ -27,6 +27,11 @@ inline bytes encode_length(size_t l)
     else
         return {LongBase + 3, static_cast<uint8_t>(l >> 16), l1, l0};
 }
+
+inline bytes wrap_list(const bytes& content)
+{
+    return internal::encode_length<0xc0, 0xf7>(content.size()) + content;
+}
 }  // namespace internal
 
 inline bytes string(bytes_view data)
@@ -65,32 +70,25 @@ inline bytes string(const intx::uint256& x)
     return string(trim({b, sizeof(b)}));
 }
 
-inline bytes list_raw(bytes_view items)
-{
-    auto r = internal::encode_length<0xc0, 0xf7>(items.size());
-    r += items;
-    return r;
-}
-
 template <typename InputIterator>
-inline bytes list_raw(InputIterator begin, InputIterator end)
+inline bytes string(InputIterator begin, InputIterator end)
 {
     bytes content;
     for (auto it = begin; it != end; ++it)
         content += string(*it);
-    return list_raw(content);
+    return internal::wrap_list(content);
 }
 
 template <typename T>
 inline bytes string(const std::vector<T>& v)
 {
-    return list_raw(v.begin(), v.end());
+    return string(v.begin(), v.end());
 }
 
 template <typename... Items>
 inline bytes list(const Items&... items)
 {
-    return list_raw((string(items) + ...));
+    return internal::wrap_list((string(items) + ...));
 }
 
 }  // namespace evmone::rlp

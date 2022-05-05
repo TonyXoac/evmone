@@ -169,24 +169,9 @@ TransitionResult transition(
         }
     }
 
-    bytes empty_rlp_list{0xc0};
-    bytes rlp_logs;
-    if (result.status_code != EVMC_SUCCESS || host.logs.empty())
-    {
-        rlp_logs = empty_rlp_list;
-    }
-    else
-    {
-        bytes logs_items;
-        for (const auto& log : host.logs)
-        {
-            logs_items +=
-                rlp::list(bytes_view{log.addr.bytes, sizeof(log.addr)}, log.topics, log.data);
-        }
-        rlp_logs = rlp::list_raw(logs_items);
-    }
-    // std::cout << "RLP LOGS:\n" << hex(rlp_logs) << "\n";
-    auto logs_hash = keccak256(rlp_logs);
+    if (result.status_code != EVMC_SUCCESS)
+        host.logs.clear();
+    const auto logs_hash = keccak256(rlp::string(host.logs));
 
     return {true, logs_hash};
 }

@@ -568,3 +568,11 @@ hash256 trie_hash(const State& state);
 
 hash256 trie_hash(const std::unordered_map<evmc::bytes32, StorageValue>& storage);
 }  // namespace evmone::state
+
+namespace evmone::state
+{
+inline bytes string(const state::StateHost::Log& log)
+{
+    return rlp::list(bytes_view{log.addr.bytes, sizeof(log.addr)}, log.topics, log.data);
+}
+}
