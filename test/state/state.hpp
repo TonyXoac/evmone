@@ -505,7 +505,7 @@ public:
         Log log;
         log.addr = addr;
         log.data = bytes{data, data_size};
-        for (size_t i = 0 ; i < topics_count; ++i)
+        for (size_t i = 0; i < topics_count; ++i)
             log.topics.push_back(topics[i]);
 
         logs.push_back(std::move(log));
@@ -555,6 +555,11 @@ public:
     }
 };
 
+inline bytes rlp_encode(const StateHost::Log& log)
+{
+    return rlp::list(log.addr, log.topics, log.data);
+}
+
 struct TransitionResult
 {
     bool success;
@@ -568,11 +573,3 @@ hash256 trie_hash(const State& state);
 
 hash256 trie_hash(const std::unordered_map<evmc::bytes32, StorageValue>& storage);
 }  // namespace evmone::state
-
-namespace evmone::state
-{
-inline bytes string(const state::StateHost::Log& log)
-{
-    return rlp::list(bytes_view{log.addr.bytes, sizeof(log.addr)}, log.topics, log.data);
-}
-}

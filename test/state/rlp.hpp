@@ -34,6 +34,18 @@ inline bytes wrap_list(const bytes& content)
 }
 }  // namespace internal
 
+inline bytes_view trim(bytes_view b) noexcept
+{
+    b.remove_prefix(std::min(b.find_first_not_of(uint8_t{0x00}), b.size()));
+    return b;
+}
+
+template <typename T>
+inline decltype(rlp_encode(std::declval<T>())) string(const T& v)
+{
+    return rlp_encode(v);
+}
+
 inline bytes string(bytes_view data)
 {
     static constexpr uint8_t short_base = 0x80;
@@ -45,13 +57,12 @@ inline bytes string(bytes_view data)
     return r;
 }
 
-inline bytes_view trim(bytes_view b) noexcept
+inline bytes string(const hash256& b)
 {
-    b.remove_prefix(std::min(b.find_first_not_of(uint8_t{0x00}), b.size()));
-    return b;
+    return string({b.bytes, sizeof(b)});
 }
 
-inline bytes string(const hash256& b)
+inline bytes string(const address& b)
 {
     return string({b.bytes, sizeof(b)});
 }
