@@ -85,6 +85,12 @@ inline bytes string(const std::vector<T>& v)
     return string(v.begin(), v.end());
 }
 
+template <typename T, size_t N>
+inline bytes string(const T (&v)[N])
+{
+    return string(std::begin(v), std::end(v));
+}
+
 template <typename... Items>
 inline bytes list(const Items&... items)
 {
