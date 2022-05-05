@@ -81,6 +81,12 @@ inline bytes list_raw(InputIterator begin, InputIterator end)
     return list_raw(content);
 }
 
+template <typename T>
+inline bytes string(const std::vector<T>& v)
+{
+    return list_raw(v.begin(), v.end());
+}
+
 template <typename... Items>
 inline bytes list(const Items&... items)
 {
