@@ -26,16 +26,6 @@ inline hash256 keccak256(bytes_view data) noexcept
     return h;
 }
 
-inline hash256 keccak256(const evmc::address& addr) noexcept
-{
-    return keccak256({addr.bytes, sizeof(addr)});
-}
-
-inline hash256 keccak256(const evmc::bytes32& h) noexcept
-{
-    return keccak256({h.bytes, sizeof(h)});
-}
-
 using evmc::address;
 using evmc::from_hex;
 using evmc::hex;

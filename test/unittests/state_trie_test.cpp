@@ -27,10 +27,13 @@ TEST(state, rlp_v1)
 
     Account a;
     a.balance = 1;
-    EXPECT_EQ(hex(rlp::encode(a)), hex(expected));
-    EXPECT_EQ(rlp::encode(a).size(), 70);
+    const auto r = rlp::tuple(a.nonce, a.balance,
+        0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32,
+        0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32);
+    EXPECT_EQ(hex(r), hex(expected));
+    EXPECT_EQ(r.size(), 70);
 
-    EXPECT_EQ(hex(rlp::string(0x31)), "31");
+    EXPECT_EQ(hex(rlp::encode(0x31)), "31");
 }
 
 TEST(state, empty_trie)
@@ -60,11 +63,14 @@ TEST(state, single_account_v1)
 
     State state;
     constexpr auto addr = 0x0000000000000000000000000000000000000002_address;
-    state.accounts[addr].balance = 1;
+    state.get_or_create(addr).balance = 1;
 
     Trie trie;
     const auto xkey = keccak256(addr);
-    const auto xval = rlp::encode(state.accounts[addr]);
+    const auto& a = state.get(addr);
+    const auto xval = rlp::tuple(a.nonce, a.balance,
+        0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32,
+        0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32);
     trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xval);
     EXPECT_EQ(trie.hash(), expected);
 
@@ -79,14 +85,14 @@ TEST(state, storage_trie_v1)
     const auto key = 0_bytes32;
     const auto value = 0x00000000000000000000000000000000000000000000000000000000000001ff_bytes32;
     const auto xkey = keccak256(key);
-    const auto xvalue = rlp::string(rlp::trim(value));
+    const auto xvalue = rlp::encode(rlp::trim(value));
 
     Trie trie;
     trie.insert(xkey, xvalue);
     EXPECT_EQ(trie.hash(), expected);
 
-    std::unordered_map<evmc::bytes32, evmc::storage_value> storage;
-    storage[key] = value;
+    std::unordered_map<evmc::bytes32, StorageValue> storage;
+    storage[key].current = value;
     EXPECT_EQ(state::trie_hash(storage), expected);
 }
 
@@ -119,18 +125,9 @@ TEST(state, trie_branch_node)
     const auto lp2 = p2.tail(1);
     EXPECT_EQ(hex(lp2.encode(false)), "3a");
 
-    const auto node1 = rlp::encode(lp1.encode(false), v1);
+    const auto node1 = rlp::tuple(lp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::encode(lp2.encode(false), v2);
-
-    BranchNode branch;
-    branch.insert(n1, keccak256(node1));
-    branch.insert(n2, keccak256(node2));
-    EXPECT_EQ(hex(branch.rlp()),
-        "f85180808080a05806d69cca87e01a0e7567781f037a6e86cdc72dff63366b000d7e00eedd36478080a0ddcda2"
-        "25116d4479645995715b72cc33ab2ac7229345297556354ff6baa5a7e5808080808080808080");
-    EXPECT_EQ(
-        hex(branch.hash()), "56e911635579e0f86dce3c116af12b30448e01cc634aac127e037efbd29e7f9f");
+    const auto node2 = rlp::tuple(lp2.encode(false), v2);
 
     Trie st;
     st.insert(Path{k1}, v1);
@@ -158,21 +155,14 @@ TEST(state, trie_extension_node)
     EXPECT_EQ(hex(hp1.encode(false)), "31");
     const auto hp2 = p2.tail(common_p.num_nibbles + 1);
 
-    const auto node1 = rlp::encode(hp1.encode(false), v1);
+    const auto node1 = rlp::tuple(hp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::encode(hp2.encode(false), v2);
+    const auto node2 = rlp::tuple(hp2.encode(false), v2);
 
+    constexpr auto branch_node_hash =
+        0x1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26_bytes32;
 
-    BranchNode branch;
-    branch.insert(n1, keccak256(node1));
-    branch.insert(n2, keccak256(node2));
-    EXPECT_EQ(hex(branch.rlp()),
-        "f85180808080a05806d69cca87e01a0e7567781f037a6e86cdc72dff63366b000d7e00eedd3647a0ddcda22511"
-        "6d4479645995715b72cc33ab2ac7229345297556354ff6baa5a7e58080808080808080808080");
-    EXPECT_EQ(
-        hex(branch.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
-
-    const auto ext = rlp::encode(common_p.encode(true), branch.hash());
+    const auto ext = rlp::tuple(common_p.encode(true), branch_node_hash);
     EXPECT_EQ(
         hex(keccak256(ext)), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
@@ -203,21 +193,15 @@ TEST(state, trie_extension_node2)
     EXPECT_EQ(hex(hp1.encode(false)), "2041");
     const auto hp2 = p2.tail(prefix.num_nibbles + 1);
 
-    const auto node1 = rlp::encode(hp1.encode(false), v1);
+    const auto node1 = rlp::tuple(hp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "e18220419d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::encode(hp2.encode(false), v2);
+    const auto node2 = rlp::tuple(hp2.encode(false), v2);
     EXPECT_EQ(hex(node2), "e182205a9d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f32");
 
-    BranchNode branch;
-    branch.insert(n1, keccak256(node1));
-    branch.insert(n2, keccak256(node2));
-    EXPECT_EQ(hex(branch.rlp()),
-        "f8518080808080808080a030afaabf307606fe3b9afa75de1e2b3ff5a735ec7c4d78c48dfefbcb88b4553da075"
-        "a7752e1452fb347efd915ff49f693793d396f9b205fb989f7f2a927da7baf780808080808080");
-    EXPECT_EQ(
-        hex(branch.hash()), "01746f8ab5a4cc5d6175cbd9ea9603357634ec06b2059f90710243f098e0ee82");
+    constexpr auto branch_node_hash =
+        0x01746f8ab5a4cc5d6175cbd9ea9603357634ec06b2059f90710243f098e0ee82_bytes32;
 
-    const auto ext = rlp::encode(prefix.encode(true), branch.hash());
+    const auto ext = rlp::tuple(prefix.encode(true), branch_node_hash);
     EXPECT_EQ(
         hex(keccak256(ext)), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 
