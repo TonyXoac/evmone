@@ -4,11 +4,17 @@
 
 #pragma once
 
-#include "utils.hpp"
+#include <intx/intx.hpp>
 #include <cassert>
+#include <string>
+#include <string_view>
+#include <vector>
 
 namespace evmone::rlp
 {
+using bytes = std::basic_string<uint8_t>;
+using bytes_view = std::basic_string_view<uint8_t>;
+
 namespace internal
 {
 template <uint8_t ShortBase, uint8_t LongBase>
@@ -55,16 +61,6 @@ inline bytes string(bytes_view data)
     auto r = internal::encode_length<short_base, 0xb7>(data.size());
     r += data;
     return r;
-}
-
-inline bytes string(const hash256& b)
-{
-    return string({b.bytes, sizeof(b)});
-}
-
-inline bytes string(const address& b)
-{
-    return string({b.bytes, sizeof(b)});
 }
 
 inline bytes string(uint64_t x)

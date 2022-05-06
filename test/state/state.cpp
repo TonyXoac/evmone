@@ -2,6 +2,8 @@
 // Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
+#include "rlp.hpp"
+
 #include "state.hpp"
 #include "trie.hpp"
 #include <evmone/evmone.h>
