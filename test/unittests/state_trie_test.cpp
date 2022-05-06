@@ -119,9 +119,9 @@ TEST(state, trie_branch_node)
     const auto lp2 = p2.tail(1);
     EXPECT_EQ(hex(lp2.encode(false)), "3a");
 
-    const auto node1 = rlp::list(lp1.encode(false), v1);
+    const auto node1 = rlp::encode(lp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::list(lp2.encode(false), v2);
+    const auto node2 = rlp::encode(lp2.encode(false), v2);
 
     BranchNode branch;
     branch.insert(n1, keccak256(node1));
@@ -158,9 +158,9 @@ TEST(state, trie_extension_node)
     EXPECT_EQ(hex(hp1.encode(false)), "31");
     const auto hp2 = p2.tail(common_p.num_nibbles + 1);
 
-    const auto node1 = rlp::list(hp1.encode(false), v1);
+    const auto node1 = rlp::encode(hp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::list(hp2.encode(false), v2);
+    const auto node2 = rlp::encode(hp2.encode(false), v2);
 
 
     BranchNode branch;
@@ -172,7 +172,7 @@ TEST(state, trie_extension_node)
     EXPECT_EQ(
         hex(branch.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
 
-    const auto ext = rlp::list(common_p.encode(true), branch.hash());
+    const auto ext = rlp::encode(common_p.encode(true), branch.hash());
     EXPECT_EQ(
         hex(keccak256(ext)), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
@@ -203,9 +203,9 @@ TEST(state, trie_extension_node2)
     EXPECT_EQ(hex(hp1.encode(false)), "2041");
     const auto hp2 = p2.tail(prefix.num_nibbles + 1);
 
-    const auto node1 = rlp::list(hp1.encode(false), v1);
+    const auto node1 = rlp::encode(hp1.encode(false), v1);
     EXPECT_EQ(hex(node1), "e18220419d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::list(hp2.encode(false), v2);
+    const auto node2 = rlp::encode(hp2.encode(false), v2);
     EXPECT_EQ(hex(node2), "e182205a9d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f32");
 
     BranchNode branch;
@@ -217,7 +217,7 @@ TEST(state, trie_extension_node2)
     EXPECT_EQ(
         hex(branch.hash()), "01746f8ab5a4cc5d6175cbd9ea9603357634ec06b2059f90710243f098e0ee82");
 
-    const auto ext = rlp::list(prefix.encode(true), branch.hash());
+    const auto ext = rlp::encode(prefix.encode(true), branch.hash());
     EXPECT_EQ(
         hex(keccak256(ext)), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 

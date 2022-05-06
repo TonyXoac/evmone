@@ -277,7 +277,7 @@ public:
             const auto& sender_acc = m_state.get(msg.sender);
             const bytes_view sender_address_bytes{msg.sender.bytes, sizeof(msg.sender)};
             const auto sender_nonce = msg.depth == 0 ? sender_acc.nonce - 1 : sender_acc.nonce;
-            const auto rlp_list = rlp::list(sender_address_bytes, sender_nonce);
+            const auto rlp_list = rlp::tuple(sender_address_bytes, sender_nonce);
             addr_base_hash = keccak256(rlp_list);
         }
         else
@@ -557,7 +557,7 @@ public:
 
 inline bytes rlp_encode(const StateHost::Log& log)
 {
-    return rlp::list(log.addr, log.topics, log.data);
+    return rlp::tuple(log.addr, log.topics, log.data);
 }
 
 struct TransitionResult

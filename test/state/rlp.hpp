@@ -8,6 +8,7 @@
 #include <cassert>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace evmone::rlp
@@ -38,6 +39,9 @@ inline bytes wrap_list(const bytes& content)
 {
     return internal::encode_length<0xc0, 0xf7>(content.size()) + content;
 }
+
+template <typename InputIterator>
+inline bytes encode_container(InputIterator begin, InputIterator end);
 }  // namespace internal
 
 inline bytes_view trim(bytes_view b) noexcept
@@ -47,12 +51,12 @@ inline bytes_view trim(bytes_view b) noexcept
 }
 
 template <typename T>
-inline decltype(rlp_encode(std::declval<T>())) string(const T& v)
+inline decltype(rlp_encode(std::declval<T>())) encode(const T& v)
 {
     return rlp_encode(v);
 }
 
-inline bytes string(bytes_view data)
+inline bytes encode(bytes_view data)
 {
     static constexpr uint8_t short_base = 0x80;
     if (data.size() == 1 && data[0] < short_base)
@@ -63,45 +67,51 @@ inline bytes string(bytes_view data)
     return r;
 }
 
-inline bytes string(uint64_t x)
+inline bytes encode(uint64_t x)
 {
     uint8_t b[sizeof(x)];
     intx::be::store(b, x);
-    return string(trim({b, sizeof(b)}));
+    return encode(trim({b, sizeof(b)}));
 }
 
-inline bytes string(const intx::uint256& x)
+inline bytes encode(const intx::uint256& x)
 {
     uint8_t b[sizeof(x)];
     intx::be::store(b, x);
-    return string(trim({b, sizeof(b)}));
-}
-
-template <typename InputIterator>
-inline bytes string(InputIterator begin, InputIterator end)
-{
-    bytes content;
-    for (auto it = begin; it != end; ++it)
-        content += string(*it);
-    return internal::wrap_list(content);
+    return encode(trim({b, sizeof(b)}));
 }
 
 template <typename T>
-inline bytes string(const std::vector<T>& v)
+inline bytes encode(const std::vector<T>& v)
 {
-    return string(v.begin(), v.end());
+    return internal::encode_container(v.begin(), v.end());
 }
 
 template <typename T, size_t N>
-inline bytes string(const T (&v)[N])
+inline bytes encode(const T (&v)[N])
 {
-    return string(std::begin(v), std::end(v));
+    return internal::encode_container(std::begin(v), std::end(v));
 }
 
-template <typename... Items>
-inline bytes list(const Items&... items)
+/// Encodes the fixed-size collection of heterogeneous values as RLP list.
+template <typename... Types>
+inline bytes tuple(const Types&... elements)
 {
-    return internal::wrap_list((string(items) + ...));
+    return internal::wrap_list((encode(elements) + ...));
 }
 
+/// Encodes the container as RLP list.
+///
+/// @tparam InputIterator  Type of the input iterator.
+/// @param  begin          Begin iterator.
+/// @param  end            End iterator.
+/// @return                Bytes of the RLP list.
+template <typename InputIterator>
+inline bytes internal::encode_container(InputIterator begin, InputIterator end)
+{
+    bytes content;
+    for (auto it = begin; it != end; ++it)
+        content += encode(*it);
+    return wrap_list(content);
+}
 }  // namespace evmone::rlp

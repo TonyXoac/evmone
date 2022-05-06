@@ -240,7 +240,7 @@ public:
             return emptyTrieHash;
         case NodeType::leaf:
         {
-            const auto node = rlp::list(m_path.encode(false), m_value);
+            const auto node = rlp::tuple(m_path.encode(false), m_value);
             r = keccak256(node);
             break;
         }
@@ -266,7 +266,7 @@ public:
                 }
             }
 
-            r = keccak256(rlp::string(children_hash_bytes));
+            r = keccak256(rlp::encode(children_hash_bytes));
             break;
         }
         case NodeType::ext:
@@ -274,7 +274,7 @@ public:
             const auto branch = children[0].get();
             assert(branch != nullptr);
             assert(branch->m_type == NodeType::branch);
-            r = keccak256(rlp::list(m_path.encode(true), branch->hash()));
+            r = keccak256(rlp::tuple(m_path.encode(true), branch->hash()));
             break;
         }
         default:
