@@ -5,6 +5,7 @@
 #pragma once
 
 #include "rlp.hpp"
+#include <algorithm>
 #include <memory>
 
 namespace evmone::state
@@ -26,13 +27,7 @@ struct Path
         }
     }
 
-    [[nodiscard]] uint8_t nibble(size_t index) const
-    {
-        assert(index < num_nibbles);
-        return nibbles[index];
-    }
-
-    Path tail(size_t index) const
+    [[nodiscard]] Path tail(size_t index) const
     {
         assert(index <= num_nibbles);
         Path p{{}};
@@ -41,7 +36,7 @@ struct Path
         return p;
     }
 
-    Path head(size_t size) const
+    [[nodiscard]] Path head(size_t size) const
     {
         assert(size < num_nibbles);
         Path p{{}};
@@ -72,20 +67,6 @@ struct Path
     }
 };
 
-inline Path common_prefix(const Path& p, const Path& q)
-{
-    assert(p.num_nibbles == q.num_nibbles);
-    Path r{{}};
-    for (size_t i = 0; i < p.num_nibbles; ++i)
-    {
-        if (p.nibbles[i] != q.nibbles[i])
-            break;
-        ++r.num_nibbles;
-        r.nibbles[i] = p.nibbles[i];
-    }
-    return r;
-}
-
 
 /// Insert-only Trie implementation for getting the root hash out of (key, value) pairs.
 /// Based on StackTrie from go-ethereum.
@@ -106,15 +87,18 @@ class Trie
     bytes m_value;
     std::unique_ptr<Trie> children[num_children];
 
-    Trie(NodeType type, const Path& path, bytes_view value = {})
-      : m_type{type}, m_path{path}, m_value{value}
+    Trie(NodeType type, const Path& path, bytes&& value = {}) noexcept
+      : m_type{type}, m_path{path}, m_value{std::move(value)}
     {}
 
     /// Named constructor for a leaf node.
-    static Trie leaf(const Path& k, bytes_view v) { return {NodeType::leaf, k, v}; }
+    static Trie leaf(const Path& k, bytes&& v) noexcept
+    {
+        return {NodeType::leaf, k, std::move(v)};
+    }
 
     /// Named constructor for an extended node.
-    static Trie ext(const Path& k, std::unique_ptr<Trie> child)
+    static Trie ext(const Path& k, std::unique_ptr<Trie> child) noexcept
     {
         Trie node{NodeType::ext, k};
         node.children[0] = std::move(child);
@@ -124,23 +108,16 @@ class Trie
     static size_t diff_index(const Path& p1, const Path& p2) noexcept
     {
         assert(p1.num_nibbles <= p2.num_nibbles);
-        size_t d = 0;
-        while (d < p1.num_nibbles && p1.nibbles[d] == p2.nibbles[d])
-            ++d;
-        return d;
+        return static_cast<size_t>(
+            std::mismatch(p1.nibbles, p1.nibbles + p1.num_nibbles, p2.nibbles).first - p1.nibbles);
     }
 
-public:
-    Trie() = default;
-
-    void insert(const hash256& key, bytes_view value) { insert(Path{key}, value); }
-
-    void insert(const Path& k, bytes_view v)
+    void insert(const Path& k, bytes&& v)
     {
         switch (m_type)
         {
         case NodeType::null:
-            *this = leaf(k, v);
+            *this = leaf(k, std::move(v));
             break;
 
         case NodeType::branch:
@@ -149,9 +126,9 @@ public:
             const auto idx = k.nibbles[0];
             auto& child = children[idx];
             if (!child)
-                child = std::make_unique<Trie>(leaf(k.tail(1), v));
+                child = std::make_unique<Trie>(leaf(k.tail(1), std::move(v)));
             else
-                child->insert(k.tail(1), v);
+                child->insert(k.tail(1), std::move(v));
             break;
         }
 
@@ -162,7 +139,7 @@ public:
             if (diffidx == m_path.num_nibbles)
             {
                 // Go into child.
-                return children[0]->insert(k.tail(diffidx), v);
+                return children[0]->insert(k.tail(diffidx), std::move(v));
             }
 
             std::unique_ptr<Trie> n;
@@ -187,7 +164,8 @@ public:
             const auto newIdx = k.nibbles[diffidx];
 
             branch->children[origIdx] = std::move(n);
-            branch->children[newIdx] = std::make_unique<Trie>(leaf(k.tail(diffidx + 1), v));
+            branch->children[newIdx] =
+                std::make_unique<Trie>(leaf(k.tail(diffidx + 1), std::move(v)));
             m_path = m_path.head(diffidx);
             break;
         }
@@ -212,14 +190,14 @@ public:
 
             const auto origIdx = m_path.nibbles[diffidx];
             branch->children[origIdx] =
-                std::make_unique<Trie>(leaf(m_path.tail(diffidx + 1), m_value));
+                std::make_unique<Trie>(leaf(m_path.tail(diffidx + 1), std::move(m_value)));
 
             const auto newIdx = k.nibbles[diffidx];
             assert(origIdx != newIdx);
-            branch->children[newIdx] = std::make_unique<Trie>(leaf(k.tail(diffidx + 1), v));
+            branch->children[newIdx] =
+                std::make_unique<Trie>(leaf(k.tail(diffidx + 1), std::move(v)));
 
             m_path = m_path.head(diffidx);
-            m_value = {};
             break;
         }
 
@@ -227,6 +205,11 @@ public:
             assert(false);
         }
     }
+
+public:
+    Trie() = default;
+
+    void insert(bytes_view key, bytes&& value) { insert(Path{key}, std::move(value)); }
 
     [[nodiscard]] hash256 hash() const
     {

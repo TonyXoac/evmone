@@ -9,6 +9,21 @@
 using namespace evmone;
 using namespace evmone::state;
 
+namespace
+{
+inline Path common_prefix(const Path& p, const Path& q) noexcept
+{
+    assert(p.num_nibbles == q.num_nibbles);
+    size_t i;
+    for (i = 0; i < p.num_nibbles; ++i)
+    {
+        if (p.nibbles[i] != q.nibbles[i])
+            break;
+    }
+    return p.head(i);
+}
+}  // namespace
+
 TEST(state, empty_code_hash)
 {
     const auto empty = keccak256(bytes_view{});
@@ -68,10 +83,10 @@ TEST(state, single_account_v1)
     Trie trie;
     const auto xkey = keccak256(addr);
     const auto& a = state.get(addr);
-    const auto xval = rlp::tuple(a.nonce, a.balance,
+    auto xval = rlp::tuple(a.nonce, a.balance,
         0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32,
         0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32);
-    trie.insert(Path{{xkey.bytes, sizeof(xkey)}}, xval);
+    trie.insert(xkey, std::move(xval));
     EXPECT_EQ(trie.hash(), expected);
 
     EXPECT_EQ(state::trie_hash(state), expected);
@@ -85,10 +100,10 @@ TEST(state, storage_trie_v1)
     const auto key = 0_bytes32;
     const auto value = 0x00000000000000000000000000000000000000000000000000000000000001ff_bytes32;
     const auto xkey = keccak256(key);
-    const auto xvalue = rlp::encode(rlp::trim(value));
+    auto xvalue = rlp::encode(rlp::trim(value));
 
     Trie trie;
-    trie.insert(xkey, xvalue);
+    trie.insert(xkey, std::move(xvalue));
     EXPECT_EQ(trie.hash(), expected);
 
     std::unordered_map<evmc::bytes32, StorageValue> storage;
@@ -100,8 +115,8 @@ TEST(state, trie_ex1)
 {
     Trie trie;
     const auto k = to_bytes("\x01\x02\x03");
-    const auto v = to_bytes("hello");
-    trie.insert(Path{k}, v);
+    auto v = to_bytes("hello");
+    trie.insert(k, std::move(v));
     EXPECT_EQ(hex(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
 }
 
@@ -109,14 +124,14 @@ TEST(state, trie_branch_node)
 {
     const auto k1 = to_bytes("A");
     const auto k2 = to_bytes("z");
-    const auto v1 = to_bytes("v___________________________1");
-    const auto v2 = to_bytes("v___________________________2");
+    auto v1 = to_bytes("v___________________________1");
+    auto v2 = to_bytes("v___________________________2");
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
     EXPECT_EQ(common_prefix(p1, p2).num_nibbles, 0);
-    const auto n1 = p1.nibble(0);
-    const auto n2 = p2.nibble(0);
+    const auto n1 = p1.nibbles[0];
+    const auto n2 = p2.nibbles[0];
     EXPECT_EQ(n1, 4);
     EXPECT_EQ(n2, 7);
 
@@ -130,8 +145,8 @@ TEST(state, trie_branch_node)
     const auto node2 = rlp::tuple(lp2.encode(false), v2);
 
     Trie st;
-    st.insert(Path{k1}, v1);
-    st.insert(Path{k2}, v2);
+    st.insert(k1, std::move(v1));
+    st.insert(k2, std::move(v2));
     EXPECT_EQ(hex(st.hash()), "56e911635579e0f86dce3c116af12b30448e01cc634aac127e037efbd29e7f9f");
 }
 
@@ -139,15 +154,15 @@ TEST(state, trie_extension_node)
 {
     const auto k1 = to_bytes("XXA");
     const auto k2 = to_bytes("XXZ");
-    const auto v1 = to_bytes("v___________________________1");
-    const auto v2 = to_bytes("v___________________________2");
+    auto v1 = to_bytes("v___________________________1");
+    auto v2 = to_bytes("v___________________________2");
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
     const auto common_p = common_prefix(p1, p2);
     EXPECT_EQ(common_p.num_nibbles, 4);
-    const auto n1 = p1.nibble(common_p.num_nibbles);
-    const auto n2 = p2.nibble(common_p.num_nibbles);
+    const auto n1 = p1.nibbles[common_p.num_nibbles];
+    const auto n2 = p2.nibbles[common_p.num_nibbles];
     EXPECT_EQ(n1, 4);
     EXPECT_EQ(n2, 5);
 
@@ -167,8 +182,8 @@ TEST(state, trie_extension_node)
         hex(keccak256(ext)), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
     Trie st;
-    st.insert(p1, v1);
-    st.insert(p2, v2);
+    st.insert(k1, std::move(v1));
+    st.insert(k2, std::move(v2));
     EXPECT_EQ(hex(st.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 }
 
@@ -177,15 +192,15 @@ TEST(state, trie_extension_node2)
 {
     const auto k1 = to_bytes("XXA");
     const auto k2 = to_bytes("XYZ");
-    const auto v1 = to_bytes("v___________________________1");
-    const auto v2 = to_bytes("v___________________________2");
+    auto v1 = to_bytes("v___________________________1");
+    auto v2 = to_bytes("v___________________________2");
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
     const auto prefix = common_prefix(p1, p2);
 
-    const auto n1 = p1.nibble(prefix.num_nibbles);
-    const auto n2 = p2.nibble(prefix.num_nibbles);
+    const auto n1 = p1.nibbles[prefix.num_nibbles];
+    const auto n2 = p2.nibbles[prefix.num_nibbles];
     EXPECT_EQ(n1, 8);
     EXPECT_EQ(n2, 9);
 
@@ -206,8 +221,8 @@ TEST(state, trie_extension_node2)
         hex(keccak256(ext)), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 
     Trie st;
-    st.insert(p1, v1);
-    st.insert(p2, v2);
+    st.insert(k1, std::move(v1));
+    st.insert(k2, std::move(v2));
     EXPECT_EQ(hex(st.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 }
 
@@ -327,9 +342,7 @@ TEST(state, trie_3keys_topologies)
             Trie st;
             for (const auto& kv : test)
             {
-                const auto k = from_hex(kv.key_hex);
-                const auto v = to_bytes(kv.value);
-                st.insert(Path{k}, v);
+                st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
                 EXPECT_EQ(hex(st.hash()), kv.hash_hex);
             }
         }
@@ -340,11 +353,7 @@ TEST(state, trie_3keys_topologies)
         {
             Trie trie;
             for (size_t i = 0; i < std::size(test); ++i)
-            {
-                const auto k = from_hex(test[order[i]].key_hex);
-                const auto v = to_bytes(test[order[i]].value);
-                trie.insert(Path{k}, v);
-            }
+                trie.insert(from_hex(test[order[i]].key_hex), to_bytes(test[order[i]].value));
             EXPECT_EQ(hex(trie.hash()), test[2].hash_hex);
         }
     }
@@ -413,9 +422,7 @@ TEST(state, trie_4keys_extended_node_split)
         Trie st;
         for (const auto& kv : test)
         {
-            const auto k = from_hex(kv.key_hex);
-            const auto v = to_bytes(kv.value);
-            st.insert(Path{k}, v);
+            st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
             EXPECT_EQ(hex(st.hash()), kv.hash_hex);
         }
     }
