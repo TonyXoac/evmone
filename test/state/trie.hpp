@@ -12,11 +12,13 @@ namespace evmone::state
 constexpr auto emptyTrieHash =
     0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32;
 
-class Trie;
+class Node;
 
+/// Insert-only Merkle Patricia Trie implementation for getting the root hash
+/// out of (key, value) pairs.
 class MPT
 {
-    std::unique_ptr<Trie> m_root;
+    std::unique_ptr<Node> m_root;
 
 public:
     MPT() noexcept;
