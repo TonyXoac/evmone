@@ -1,5 +1,5 @@
 // evmone: Fast Ethereum Virtual Machine implementation
-// Copyright 2021 The evmone Authors.
+// Copyright 2022 The evmone Authors.
 // SPDX-License-Identifier: Apache-2.0
 
 #include <gtest/gtest.h>
@@ -10,21 +10,6 @@
 
 using namespace evmone;
 using namespace evmone::state;
-
-namespace
-{
-inline Path common_prefix(const Path& p, const Path& q) noexcept
-{
-    assert(p.num_nibbles == q.num_nibbles);
-    size_t i;
-    for (i = 0; i < p.num_nibbles; ++i)
-    {
-        if (p.nibbles[i] != q.nibbles[i])
-            break;
-    }
-    return p.head(i);
-}
-}  // namespace
 
 TEST(state, empty_code_hash)
 {
@@ -80,120 +65,110 @@ TEST(state, storage_trie_v1)
     EXPECT_EQ(state::trie_hash(storage), expected);
 }
 
-TEST(state, trie_leaf_node_example)
+TEST(state_trie, leaf_node_example1)
 {
     Trie trie;
     trie.insert("\x01\x02\x03"_b, "hello"_b);
     EXPECT_EQ(hex(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
 }
 
-TEST(state, trie_branch_node)
+TEST(state_trie, branch_node_example1)
 {
-    const auto k1 = "A"_b;
-    const auto k2 = "z"_b;
-    auto v1 = "v___________________________1"_b;
-    auto v2 = "v___________________________2"_b;
+    // A trie of single branch node and two leaf nodes with paths of length 2.
+    // The branch node has leaf nodes at positions [4] and [5].
+    // {4:1, 5:a}
 
-    const auto p1 = Path(k1);
-    const auto p2 = Path(k2);
-    EXPECT_EQ(common_prefix(p1, p2).num_nibbles, 0);
-    const auto n1 = p1.nibbles[0];
-    const auto n2 = p2.nibbles[0];
-    EXPECT_EQ(n1, 4);
-    EXPECT_EQ(n2, 7);
+    auto value1 = "v___________________________1"_b;
+    const auto key1 = "A"_b;
+    const uint8_t path1[]{0x4, 0x1};
+    const bytes encoded_path1{uint8_t(0x30 | path1[1])};
+    const auto leaf_node1 = rlp::tuple(encoded_path1, value1);
+    EXPECT_EQ(hex(leaf_node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
 
-    const auto lp1 = p1.tail(1);
-    EXPECT_EQ(hex(lp1.encode(false)), "31");
-    const auto lp2 = p2.tail(1);
-    EXPECT_EQ(hex(lp2.encode(false)), "3a");
+    auto value2 = "v___________________________2"_b;
+    const auto key2 = "Z"_b;
+    const uint8_t path2[]{0x5, 0xa};
+    const bytes encoded_path2{uint8_t(0x30 | path2[1])};
+    const auto leaf_node2 = rlp::tuple(encoded_path2, value2);
+    EXPECT_EQ(hex(leaf_node2), "df3a9d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f32");
 
-    const auto node1 = rlp::tuple(lp1.encode(false), v1);
-    EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::tuple(lp2.encode(false), v2);
-
-    Trie st;
-    st.insert(k1, std::move(v1));
-    st.insert(k2, std::move(v2));
-    EXPECT_EQ(hex(st.hash()), "56e911635579e0f86dce3c116af12b30448e01cc634aac127e037efbd29e7f9f");
+    Trie trie;
+    trie.insert(key1, std::move(value1));
+    trie.insert(key2, std::move(value2));
+    EXPECT_EQ(hex(trie.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
 }
 
-TEST(state, trie_extension_node)
+TEST(state_trie, extension_node_example1)
 {
-    const auto k1 = "XXA"_b;
-    const auto k2 = "XXZ"_b;
-    auto v1 = "v___________________________1"_b;
-    auto v2 = "v___________________________2"_b;
+    // A trie of an extension node followed by a branch node with
+    // two leafs with single nibble paths.
+    // 5858:{4:1, 5:a}
 
-    const auto p1 = Path(k1);
-    const auto p2 = Path(k2);
-    const auto common_p = common_prefix(p1, p2);
-    EXPECT_EQ(common_p.num_nibbles, 4);
-    const auto n1 = p1.nibbles[common_p.num_nibbles];
-    const auto n2 = p2.nibbles[common_p.num_nibbles];
-    EXPECT_EQ(n1, 4);
-    EXPECT_EQ(n2, 5);
+    auto value1 = "v___________________________1"_b;
+    const auto key1 = "XXA"_b;
+    [[maybe_unused]] const uint8_t path1[]{0x5, 0x8, 0x5, 0x8, 0x4, 0x1};
 
-    const auto hp1 = p1.tail(common_p.num_nibbles + 1);
-    EXPECT_EQ(hex(hp1.encode(false)), "31");
-    const auto hp2 = p2.tail(common_p.num_nibbles + 1);
+    auto value2 = "v___________________________2"_b;
+    const auto key2 = "XXZ"_b;
+    [[maybe_unused]] const uint8_t path2[]{0x5, 0x8, 0x5, 0x8, 0x5, 0xa};
 
-    const auto node1 = rlp::tuple(hp1.encode(false), v1);
-    EXPECT_EQ(hex(node1), "df319d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::tuple(hp2.encode(false), v2);
+    const bytes encoded_common_path{0x00, 0x58, 0x58};
 
+    // The hash of the branch node. See the branch_node_example test.
     constexpr auto branch_node_hash =
         0x1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26_bytes32;
 
-    const auto ext = rlp::tuple(common_p.encode(true), branch_node_hash);
-    EXPECT_EQ(
-        hex(keccak256(ext)), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
+    const auto extension_node = rlp::tuple(encoded_common_path, branch_node_hash);
+    EXPECT_EQ(hex(keccak256(extension_node)),
+        "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
-    Trie st;
-    st.insert(k1, std::move(v1));
-    st.insert(k2, std::move(v2));
-    EXPECT_EQ(hex(st.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
+    Trie trie;
+    trie.insert(key1, std::move(value1));
+    trie.insert(key2, std::move(value2));
+    EXPECT_EQ(hex(trie.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 }
 
-
-TEST(state, trie_extension_node2)
+TEST(state_trie, extension_node_example2)
 {
-    const auto k1 = "XXA"_b;
-    const auto k2 = "XYZ"_b;
-    auto v1 = "v___________________________1"_b;
-    auto v2 = "v___________________________2"_b;
+    // A trie of an extension node followed by a branch node with
+    // two leafs with longer paths.
+    // 585:{8:4a, 9:5a}
 
-    const auto p1 = Path(k1);
-    const auto p2 = Path(k2);
-    const auto prefix = common_prefix(p1, p2);
+    auto value1 = "v___________________________1"_b;
+    const auto key1 = "XXA"_b;
+    const uint8_t path1[]{0x5, 0x8, 0x5, 0x8, 0x4, 0x1};
 
-    const auto n1 = p1.nibbles[prefix.num_nibbles];
-    const auto n2 = p2.nibbles[prefix.num_nibbles];
-    EXPECT_EQ(n1, 8);
-    EXPECT_EQ(n2, 9);
+    auto value2 = "v___________________________2"_b;
+    const auto key2 = "XYZ"_b;
+    const uint8_t path2[]{0x5, 0x8, 0x5, 0x9, 0x5, 0xa};
 
-    const auto hp1 = p1.tail(prefix.num_nibbles + 1);
-    EXPECT_EQ(hex(hp1.encode(false)), "2041");
-    const auto hp2 = p2.tail(prefix.num_nibbles + 1);
+    const uint8_t common_path[]{0x5, 0x8, 0x5};
+    const bytes encoded_path1{0x20, uint8_t((path1[4] << 4) | path1[5])};
+    EXPECT_EQ(hex(encoded_path1), "2041");
+    const bytes encoded_path2{0x20, uint8_t((path2[4] << 4) | path2[5])};
+    EXPECT_EQ(hex(encoded_path2), "205a");
 
-    const auto node1 = rlp::tuple(hp1.encode(false), v1);
+    const auto node1 = rlp::tuple(encoded_path1, value1);
     EXPECT_EQ(hex(node1), "e18220419d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f31");
-    const auto node2 = rlp::tuple(hp2.encode(false), v2);
+    const auto node2 = rlp::tuple(encoded_path2, value2);
     EXPECT_EQ(hex(node2), "e182205a9d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f32");
 
     constexpr auto branch_node_hash =
         0x01746f8ab5a4cc5d6175cbd9ea9603357634ec06b2059f90710243f098e0ee82_bytes32;
 
-    const auto ext = rlp::tuple(prefix.encode(true), branch_node_hash);
-    EXPECT_EQ(
-        hex(keccak256(ext)), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
+    const bytes encoded_common_path{
+        uint8_t(0x10 | common_path[0]), uint8_t((common_path[1] << 4) | common_path[2])};
+    const auto extension_node = rlp::tuple(encoded_common_path, branch_node_hash);
+    EXPECT_EQ(hex(keccak256(extension_node)),
+        "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 
-    Trie st;
-    st.insert(k1, std::move(v1));
-    st.insert(k2, std::move(v2));
-    EXPECT_EQ(hex(st.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
+    Trie trie;
+    trie.insert(key1, std::move(value1));
+    trie.insert(key2, std::move(value2));
+    EXPECT_EQ(hex(trie.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 }
 
-TEST(state, trie_topologies)
+TEST(state_trie, trie_topologies)
 {
     struct KVH
     {
