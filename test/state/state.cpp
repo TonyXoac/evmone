@@ -180,7 +180,7 @@ TransitionResult transition(
 
 hash256 trie_hash(const State& state)
 {
-    Trie trie;
+    MPT trie;
     for (const auto& [addr, acc] : state.get_accounts())
     {
         const auto xkey = keccak256(addr);
@@ -196,7 +196,7 @@ hash256 trie_hash(const State& state)
 
 hash256 trie_hash(const std::unordered_map<evmc::bytes32, StorageValue>& storage)
 {
-    Trie trie;
+    MPT trie;
     for (const auto& [key, value] : storage)
     {
         // Skip zero values which mean "delete".

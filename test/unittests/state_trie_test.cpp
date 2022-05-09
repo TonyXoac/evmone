@@ -20,7 +20,7 @@ TEST(state, empty_code_hash)
 
 TEST(state, empty_trie)
 {
-    EXPECT_EQ(Trie{}.hash(), emptyTrieHash);
+    EXPECT_EQ(MPT{}.hash(), emptyTrieHash);
     EXPECT_EQ(state::trie_hash(State{}), emptyTrieHash);
 }
 
@@ -34,7 +34,7 @@ TEST(state, single_account_v1)
     constexpr auto addr = 0x0000000000000000000000000000000000000002_address;
     state.get_or_create(addr).balance = 1;
 
-    Trie trie;
+    MPT trie;
     const auto xkey = keccak256(addr);
     const auto& a = state.get(addr);
     auto xval = rlp::tuple(a.nonce, a.balance,
@@ -56,7 +56,7 @@ TEST(state, storage_trie_v1)
     const auto xkey = keccak256(key);
     auto xvalue = rlp::encode(rlp::trim(value));
 
-    Trie trie;
+    MPT trie;
     trie.insert(xkey, std::move(xvalue));
     EXPECT_EQ(trie.hash(), expected);
 
@@ -67,7 +67,7 @@ TEST(state, storage_trie_v1)
 
 TEST(state_trie, leaf_node_example1)
 {
-    Trie trie;
+    MPT trie;
     trie.insert("\x01\x02\x03"_b, "hello"_b);
     EXPECT_EQ(hex(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
 }
@@ -92,7 +92,7 @@ TEST(state_trie, branch_node_example1)
     const auto leaf_node2 = rlp::tuple(encoded_path2, value2);
     EXPECT_EQ(hex(leaf_node2), "df3a9d765f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f5f32");
 
-    Trie trie;
+    MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
     EXPECT_EQ(hex(trie.hash()), "1aaa6f712413b9a115730852323deb5f5d796c29151a60a1f55f41a25354cd26");
@@ -122,7 +122,7 @@ TEST(state_trie, extension_node_example1)
     EXPECT_EQ(hex(keccak256(extension_node)),
         "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
 
-    Trie trie;
+    MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
     EXPECT_EQ(hex(trie.hash()), "3eefc183db443d44810b7d925684eb07256e691d5c9cb13215660107121454f9");
@@ -162,7 +162,7 @@ TEST(state_trie, extension_node_example2)
     EXPECT_EQ(hex(keccak256(extension_node)),
         "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 
-    Trie trie;
+    MPT trie;
     trie.insert(key1, std::move(value1));
     trie.insert(key2, std::move(value2));
     EXPECT_EQ(hex(trie.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
@@ -323,11 +323,11 @@ TEST(state_trie, trie_topologies)
     {
         // Insert in order and check hash at every step.
         {
-            Trie st;
+            MPT trie;
             for (const auto& kv : test)
             {
-                st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
-                EXPECT_EQ(hex(st.hash()), kv.hash_hex);
+                trie.insert(from_hex(kv.key_hex), to_bytes(kv.value));
+                EXPECT_EQ(hex(trie.hash()), kv.hash_hex);
             }
         }
 
@@ -336,7 +336,7 @@ TEST(state_trie, trie_topologies)
         std::iota(order.begin(), order.end(), size_t{0});
         while (std::next_permutation(order.begin(), order.end()))
         {
-            Trie trie;
+            MPT trie;
             for (size_t i = 0; i < test.size(); ++i)
                 trie.insert(from_hex(test[order[i]].key_hex), to_bytes(test[order[i]].value));
             EXPECT_EQ(hex(trie.hash()), test.back().hash_hex);
