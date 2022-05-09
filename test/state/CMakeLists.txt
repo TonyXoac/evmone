@@ -15,5 +15,6 @@ target_sources(
     state.hpp
     state.cpp
     trie.hpp
+    trie.cpp
     utils.hpp
 )
