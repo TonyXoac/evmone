@@ -33,15 +33,6 @@ using evmc::from_hex;
 using evmc::hex;
 using namespace evmc::literals;
 
-inline bytes to_bytes(std::string_view s)
-{
-    bytes b;
-    b.reserve(std::size(s));
-    for (const auto c : s)
-        b.push_back(static_cast<uint8_t>(c));
-    return b;
-}
-
 constexpr evmc_revision from_string(std::string_view s) noexcept
 {
     if (s == "Frontier")

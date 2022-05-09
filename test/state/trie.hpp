@@ -237,12 +237,12 @@ public:
             // but this is what the spec says.
             bytes_view children_hash_bytes[num_children + 1];
 
-            for (uint8_t i = 0; i < num_children; ++i)
+            for (size_t i = 0; i < num_children; ++i)
             {
                 if (children[i])
                 {
                     children_hashes[i] = children[i]->hash();
-                    children_hash_bytes[i] = {children_hashes[i].bytes, sizeof(hash256)};
+                    children_hash_bytes[i] = children_hashes[i];
                 }
             }
 

@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <test/state/state.hpp>
 #include <test/state/trie.hpp>
+#include <test/utils/utils.hpp>
+#include <numeric>
 
 using namespace evmone;
 using namespace evmone::state;
@@ -31,43 +33,10 @@ TEST(state, empty_code_hash)
     EXPECT_EQ(emptyCodeHash, empty);
 }
 
-TEST(state, rlp_v1)
-{
-    const auto expected = from_hex(
-        "f8 44"
-        "80"
-        "01"
-        "a0 56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
-        "a0 c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
-
-    Account a;
-    a.balance = 1;
-    const auto r = rlp::tuple(a.nonce, a.balance,
-        0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421_bytes32,
-        0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470_bytes32);
-    EXPECT_EQ(hex(r), hex(expected));
-    EXPECT_EQ(r.size(), 70);
-
-    EXPECT_EQ(hex(rlp::encode(0x31)), "31");
-}
-
 TEST(state, empty_trie)
 {
-    const auto rlp_null = bytes{0x80};
-    const auto empty_trie_hash = keccak256(rlp_null);
-    EXPECT_EQ(empty_trie_hash, emptyTrieHash);
-
-    Trie trie;
-    EXPECT_EQ(trie.hash(), emptyTrieHash);
-
+    EXPECT_EQ(Trie{}.hash(), emptyTrieHash);
     EXPECT_EQ(state::trie_hash(State{}), emptyTrieHash);
-}
-
-TEST(state, hashed_address)
-{
-    const auto addr = 0x0000000000000000000000000000000000000002_address;
-    const auto hashed_addr = keccak256(addr);
-    EXPECT_EQ(hex(hashed_addr), "d52688a8f926c816ca1e079067caba944f158e764817b83fc43594370ca9cf62");
 }
 
 TEST(state, single_account_v1)
@@ -111,21 +80,19 @@ TEST(state, storage_trie_v1)
     EXPECT_EQ(state::trie_hash(storage), expected);
 }
 
-TEST(state, trie_ex1)
+TEST(state, trie_leaf_node_example)
 {
     Trie trie;
-    const auto k = to_bytes("\x01\x02\x03");
-    auto v = to_bytes("hello");
-    trie.insert(k, std::move(v));
+    trie.insert("\x01\x02\x03"_b, "hello"_b);
     EXPECT_EQ(hex(trie.hash()), "82c8fd36022fbc91bd6b51580cfd941d3d9994017d59ab2e8293ae9c94c3ab6e");
 }
 
 TEST(state, trie_branch_node)
 {
-    const auto k1 = to_bytes("A");
-    const auto k2 = to_bytes("z");
-    auto v1 = to_bytes("v___________________________1");
-    auto v2 = to_bytes("v___________________________2");
+    const auto k1 = "A"_b;
+    const auto k2 = "z"_b;
+    auto v1 = "v___________________________1"_b;
+    auto v2 = "v___________________________2"_b;
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
@@ -152,10 +119,10 @@ TEST(state, trie_branch_node)
 
 TEST(state, trie_extension_node)
 {
-    const auto k1 = to_bytes("XXA");
-    const auto k2 = to_bytes("XXZ");
-    auto v1 = to_bytes("v___________________________1");
-    auto v2 = to_bytes("v___________________________2");
+    const auto k1 = "XXA"_b;
+    const auto k2 = "XXZ"_b;
+    auto v1 = "v___________________________1"_b;
+    auto v2 = "v___________________________2"_b;
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
@@ -190,10 +157,10 @@ TEST(state, trie_extension_node)
 
 TEST(state, trie_extension_node2)
 {
-    const auto k1 = to_bytes("XXA");
-    const auto k2 = to_bytes("XYZ");
-    auto v1 = to_bytes("v___________________________1");
-    auto v2 = to_bytes("v___________________________2");
+    const auto k1 = "XXA"_b;
+    const auto k2 = "XYZ"_b;
+    auto v1 = "v___________________________1"_b;
+    auto v2 = "v___________________________2"_b;
 
     const auto p1 = Path(k1);
     const auto p2 = Path(k2);
@@ -226,7 +193,7 @@ TEST(state, trie_extension_node2)
     EXPECT_EQ(hex(st.hash()), "ac28c08fa3ff1d0d2cc9a6423abb7af3f4dcc37aa2210727e7d3009a9b4a34e8");
 }
 
-TEST(state, trie_3keys_topologies)
+TEST(state, trie_topologies)
 {
     struct KVH
     {
@@ -236,7 +203,7 @@ TEST(state, trie_3keys_topologies)
     };
 
     // clang-format off
-    KVH tests[][3] = {
+    std::vector<KVH> tests[] = {
         { // {0:0, 7:0, f:0}
             {"00", "v_______________________0___0", "5cb26357b95bb9af08475be00243ceb68ade0b66b5cd816b0c18a18c612d2d21"},
             {"70", "v_______________________0___1", "8ff64309574f7a437a7ad1628e690eb7663cfde10676f8a904a8c8291dbc1603"},
@@ -332,46 +299,6 @@ TEST(state, trie_3keys_topologies)
             {"1234ea", "x___________________________1", "2f502917f3ba7d328c21c8b45ee0f160652e68450332c166d4ad02d1afe31862"},
             {"2aaaaa", "x___________________________2", "5f5989b820ff5d76b7d49e77bb64f26602294f6c42a1a3becc669cd9e0dc8ec9"},
         },
-    };
-    // clang-format on
-
-    for (const auto& test : tests)
-    {
-        // Insert in order and check hash at every step.
-        {
-            Trie st;
-            for (const auto& kv : test)
-            {
-                st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
-                EXPECT_EQ(hex(st.hash()), kv.hash_hex);
-            }
-        }
-
-        // Check if all insert order permutations give the same final hash.
-        size_t order[] = {0, 1, 2};
-        while (std::next_permutation(std::begin(order), std::end(order)))
-        {
-            Trie trie;
-            for (size_t i = 0; i < std::size(test); ++i)
-                trie.insert(from_hex(test[order[i]].key_hex), to_bytes(test[order[i]].value));
-            EXPECT_EQ(hex(trie.hash()), test[2].hash_hex);
-        }
-    }
-}
-
-TEST(state, trie_4keys_extended_node_split)
-{
-    // TODO: Move the test cases to trie_3keys_topologies by using std::span or
-    //       std::initializer_list.
-    struct KVH
-    {
-        const char* key_hex;
-        const char* value;
-        const char* hash_hex;
-    };
-
-    // clang-format off
-    KVH tests[][4] = {
         {
             {"000000", "x___________________________0", "3b32b7af0bddc7940e7364ee18b5a59702c1825e469452c8483b9c4e0218b55a"},
             {"1234da", "x___________________________1", "3ab152a1285dca31945566f872c1cc2f17a770440eda32aeee46a5e91033dde2"},
@@ -419,11 +346,25 @@ TEST(state, trie_4keys_extended_node_split)
 
     for (const auto& test : tests)
     {
-        Trie st;
-        for (const auto& kv : test)
+        // Insert in order and check hash at every step.
         {
-            st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
-            EXPECT_EQ(hex(st.hash()), kv.hash_hex);
+            Trie st;
+            for (const auto& kv : test)
+            {
+                st.insert(from_hex(kv.key_hex), to_bytes(kv.value));
+                EXPECT_EQ(hex(st.hash()), kv.hash_hex);
+            }
+        }
+
+        // Check if all insert order permutations give the same final hash.
+        std::vector<size_t> order(test.size());
+        std::iota(order.begin(), order.end(), size_t{0});
+        while (std::next_permutation(order.begin(), order.end()))
+        {
+            Trie trie;
+            for (size_t i = 0; i < test.size(); ++i)
+                trie.insert(from_hex(test[order[i]].key_hex), to_bytes(test[order[i]].value));
+            EXPECT_EQ(hex(trie.hash()), test.back().hash_hex);
         }
     }
 }
