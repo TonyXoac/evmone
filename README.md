@@ -16,6 +16,8 @@ The codebase of _evmone_ is optimized to provide fast and efficient execution of
 
 ### Characteristic of evmone
 
+
+
 1. Exposes the [EVMC] API.
 2. Requires C++17 standard.
 3. The [intx] library is used to provide 256-bit integer precision.
